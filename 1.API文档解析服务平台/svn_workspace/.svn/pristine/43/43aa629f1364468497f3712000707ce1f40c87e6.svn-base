@@ -1,0 +1,94 @@
+# 测试用例 YAML 格式文件
+# 生成时间: 2025/11/29 09:25:27
+# 测试用例数量: 4
+test_cases:
+  - test_case_id: "TC001"
+    test_case_name: "正常查询角色报表树"
+    api_name: "查询角色报表分发树列表及其勾选"
+    method: "POST"
+    url: "/user/sysRoleReportAssign/getRoleReportTree"
+    headers:
+      Content-Type: "application/json"
+    request_data:
+      sysRoleReportAssignDTO: {"reportCode":"RPT001","roleCode":"ROLE001"}
+    expected_status_code: 200
+    expected_response:
+      code: "1"
+      data: {"treeList":[{"id":"TR001","name":"报表1","checked":false}]}
+      total: "1"
+    test_type: "positive"
+    priority: "high"
+    description: "验证基础查询功能"
+    preconditions: "用户已通过认证"
+    postconditions: "返回有效树形数据"
+    tags:
+      - "角色报表"
+      - "正常流程"
+
+  - test_case_id: "TC002"
+    test_case_name: "分页查询"
+    api_name: "查询角色报表分发树列表及其勾选"
+    method: "POST"
+    url: "/user/sysRoleReportAssign/getRoleReportTree"
+    headers:
+      Content-Type: "application/json"
+    request_data:
+      sysRoleReportAssignDTO: {"pageNum":"1","pageSize":"10"}
+    expected_status_code: 200
+    expected_response:
+      code: "1"
+      pageNum: "1"
+      pageSize: "10"
+      total: "50"
+    test_type: "boundary"
+    priority: "medium"
+    description: "验证分页参数处理"
+    preconditions: "存在超过100条数据"
+    postconditions: "正确返回分页信息"
+    tags:
+      - "分页"
+      - "边界值"
+
+  - test_case_id: "TC003"
+    test_case_name: "无效参数校验"
+    api_name: "查询角色报表分发树列表及其勾选"
+    method: "POST"
+    url: "/user/sysRoleReportAssign/getRoleReportTree"
+    headers:
+      Content-Type: "application/json"
+    request_data:
+      sysRoleReportAssignDTO: {"reportCode":"invalid"}
+    expected_status_code: 400
+    expected_response:
+      code: "0"
+      message: "报表编码格式不正确"
+    test_type: "negative"
+    priority: "low"
+    description: "验证参数校验机制"
+    preconditions: "提供无效的reportCode"
+    postconditions: "返回参数错误提示"
+    tags:
+      - "参数校验"
+      - "错误处理"
+
+  - test_case_id: "TC004"
+    test_case_name: "未认证访问"
+    api_name: "查询角色报表分发树列表及其勾选"
+    method: "POST"
+    url: "/user/sysRoleReportAssign/getRoleReportTree"
+    headers:
+      Content-Type: "application/json"
+    request_data:
+      sysRoleReportAssignDTO: {"reportCode":"RPT001"}
+    expected_status_code: 401
+    expected_response:
+      code: "401"
+      message: "认证信息不足"
+    test_type: "security"
+    priority: "high"
+    description: "验证未认证访问控制"
+    preconditions: "未进行身份验证"
+    postconditions: "拒绝访问并提示认证失败"
+    tags:
+      - "认证"
+      - "安全"

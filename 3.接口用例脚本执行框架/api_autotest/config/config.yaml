@@ -1,0 +1,40 @@
+# 环境配置
+env:
+  test:
+    base_url: "http://172.16.9.XXX:81/common"
+    timeout: 30
+  prod:
+    base_url: "http://172.16.9.XXX:81/common"
+    timeout: 30
+
+# 全局请求头
+headers:
+  Content-Type: "application/json;charset=UTF-8"
+  User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+  Accept: "application/json, text/plain, */*"
+  loginapp: "pcApp"
+  Token: "XXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+# 登录认证配置
+login:
+  # 方案1：万能验证码登录方案
+  # 登录接口URL
+  url: "/user/login"
+  # 登录请求数据（包含万能验证码）
+  data:
+    username: "test_user"
+    password: "test_password"
+    captcha: "8888"  # 万能验证码
+  # 认证头字段名
+  auth_header: "Authorization"
+  # token在响应中的路径
+  token_path: "data.token"
+  
+  # 方案2：固定token值绕过登录方案
+  # 直接使用token认证（优先级高于登录）
+  token: "${API_TOKEN}"  # 从环境变量获取固定token值
+# 日志配置
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/api_test.log"

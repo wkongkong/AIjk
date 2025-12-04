@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试用例调试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .log {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 3px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>测试用例调试页面</h1>
+    
+    <div class="section">
+        <h2>URL参数检查</h2>
+        <div id="urlParams" class="log"></div>
+    </div>
+    
+    <div class="section">
+        <h2>YAML内容解析测试</h2>
+        <div id="yamlTest" class="log"></div>
+    </div>
+    
+    <div class="section">
+        <h2>接口信息测试</h2>
+        <button onclick="testInterfaceInfo()">测试接口信息加载</button>
+        <div id="interfaceTest" class="log"></div>
+    </div>
+    
+    <div class="section">
+        <h2>控制台日志</h2>
+        <div id="consoleLog" class="log"></div>
+    </div>
+
+    <script>
+        // 模拟控制台日志
+        const originalConsole = {
+            log: console.log,
+            error: console.error,
+            warn: console.warn
+        };
+        
+        function logToScreen(type, ...args) {
+            const logDiv = document.getElementById('consoleLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            
+            logDiv.innerHTML += `<span class="${type}">[${timestamp}] ${type.toUpperCase()}: ${message}</span>\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            
+            // 调用原始控制台方法
+            originalConsole[type](...args);
+        }
+        
+        // 重写控制台方法
+        console.log = (...args) => logToScreen('log', ...args);
+        console.error = (...args) => logToScreen('error', ...args);
+        console.warn = (...args) => logToScreen('warn', ...args);
+        
+        // 页面加载时检查URL参数
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const params = {};
+            
+            for (const [key, value] of urlParams.entries()) {
+                params[key] = {
+                    value: value,
+                    length: value.length,
+                    truncated: value.length > 1000
+                };
+            }
+            
+            document.getElementById('urlParams').textContent = JSON.stringify(params, null, 2);
+            
+            console.log('URL参数检查:', params);
+            
+            // 测试YAML解析
+            if (params.yaml_content) {
+                testYAMLParse(params.yaml_content.value);
+            }
+        });
+        
+        function testYAMLParse(yamlContent) {
+            console.log('开始测试YAML解析');
+            const testDiv = document.getElementById('yamlTest');
+            
+            try {
+                // 解码URL参数
+                const decodedYAML = decodeURIComponent(yamlContent);
+                console.log('解码后的YAML长度:', decodedYAML.length);
+                console.log('YAML前200字符:', decodedYAML.substring(0, 200));
+                
+                // 解析YAML
+                const yamlData = jsyaml.load(decodedYAML);
+                console.log('YAML解析结果:', yamlData);
+                
+                if (!yamlData || !yamlData.test_cases) {
+                    testDiv.innerHTML = '<span class="error">YAML格式错误：缺少test_cases字段</span>';
+                    return;
+                }
+                
+                const testCases = yamlData.test_cases;
+                
+                console.log('解析出的测试用例:', testCases);
+                
+                testDiv.innerHTML = `
+                    <span class="success">YAML解析成功！</span><br>
+                    <strong>测试用例数量:</strong> ${testCases.length}<br>
+                    <strong>样例数据:</strong><br>
+                    <pre>${JSON.stringify(testCases.slice(0, 3), null, 2)}</pre>
+                `;
+                
+            } catch (error) {
+                console.error('YAML解析失败:', error);
+                testDiv.innerHTML = `<span class="error">YAML解析失败: ${error.message}</span>`;
+            }
+        }
+        
+        function parseYAMLLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            
+            result.push(current.trim());
+            return result;
+        }
+        
+        async function testInterfaceInfo() {
+            const testDiv = document.getElementById('interfaceTest');
+            testDiv.innerHTML = '加载中...';
+            
+            try {
+                // 从URL参数获取接口信息
+                const urlParams = new URLSearchParams(window.location.search);
+                const collectionId = urlParams.get('collection_id');
+                const interfaceId = urlParams.get('interface_id');
+                
+                if (!collectionId || !interfaceId) {
+                    testDiv.innerHTML = '<span class="error">缺少接口参数</span>';
+                    return;
+                }
+                
+                console.log('测试接口信息加载:', { collectionId, interfaceId });
+                
+                const response = await fetch(`/api/interface/${collectionId}/${interfaceId}`);
+                console.log('接口信息响应状态:', response.status);
+                
+                if (response.ok) {
+                    const interfaceInfo = await response.json();
+                    console.log('接口信息:', interfaceInfo);
+                    
+                    testDiv.innerHTML = `
+                        <span class="success">接口信息加载成功！</span><br>
+                        <strong>接口名称:</strong> ${interfaceInfo.interface.name}<br>
+                        <strong>请求方法:</strong> ${interfaceInfo.interface.method}<br>
+                        <strong>URL:</strong> ${interfaceInfo.interface.url}<br>
+                        <strong>描述:</strong> ${interfaceInfo.interface.description || '无描述'}
+                    `;
+                } else {
+                    const errorText = await response.text();
+                    console.error('接口信息加载失败:', response.status, errorText);
+                    testDiv.innerHTML = `<span class="error">接口信息加载失败: ${response.status}</span>`;
+                }
+            } catch (error) {
+                console.error('接口信息加载错误:', error);
+                testDiv.innerHTML = `<span class="error">接口信息加载错误: ${error.message}</span>`;
+            }
+        }
+    </script>
+</body>
+</html>

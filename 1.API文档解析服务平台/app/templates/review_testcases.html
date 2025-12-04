@@ -1,0 +1,2036 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试用例审核 - API 文档解析服务</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='themes.css') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .testcase-info {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .testcase-info h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .info-item {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin: 20px 0;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .testcase-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 2000px;
+            table-layout: fixed;
+        }
+
+        .testcase-table th,
+        .testcase-table td {
+            border: 1px solid #e0e0e0;
+            padding: 8px;
+            text-align: left;
+            word-wrap: break-word;
+            font-size: 0.9em;
+        }
+
+        .testcase-table th {
+            background: #f5f5f5;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            min-width: 100px;
+            max-width: 200px;
+        }
+
+        /* 固定第一列（复选框列） */
+        .testcase-table th:first-child,
+        .testcase-table td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 20;
+            background: white;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+
+        .testcase-table th:first-child {
+            background: #f5f5f5;
+            z-index: 30;
+        }
+
+        /* 固定第二列（测试用例ID列） */
+        .testcase-table th:nth-child(2),
+        .testcase-table td:nth-child(2) {
+            position: sticky;
+            left: 50px;
+            z-index: 15;
+            background: white;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+
+        .testcase-table th:nth-child(2) {
+            background: #f5f5f5;
+            z-index: 25;
+        }
+
+        .testcase-table td {
+            min-width: 120px;
+            max-width: 250px;
+        }
+
+        .testcase-table tbody tr:hover {
+            background: #f8f9ff;
+        }
+
+        .testcase-table tbody tr:hover td:first-child,
+        .testcase-table tbody tr:hover td:nth-child(2) {
+            background: #f8f9ff;
+        }
+
+        /* 预期状态码列 - 调整宽度以一行显示 */
+        .testcase-table th:nth-child(9),
+        .testcase-table td:nth-child(9) {
+            min-width: 120px;
+            max-width: 140px;
+            white-space: nowrap;
+        }
+
+        /* 审核状态相关样式 */
+        .row-approved {
+            background: #e8f5e9 !important;
+        }
+
+        .row-rejected {
+            background: #ffebee !important;
+        }
+
+        .row-pending {
+            background: #fff !important;
+        }
+
+        .checkbox-cell {
+            width: 50px;
+            text-align: center;
+        }
+
+        .testcase-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .editable-cell {
+            position: relative;
+        }
+
+        .editable-cell input,
+        .editable-cell textarea {
+            width: 100%;
+            border: 1px solid #ddd;
+            padding: 6px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 0.9em;
+            box-sizing: border-box;
+        }
+
+        .editable-cell textarea {
+            min-height: 80px;
+            resize: vertical;
+            line-height: 1.4;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-approved { background: #d4edda; color: #155724; }
+        .status-rejected { background: #f8d7da; color: #721c24; }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .search-input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-width: 200px;
+        }
+
+        .back-btn {
+            background: #6c757d;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .back-btn:hover {
+            background: #5a6268;
+        }
+        
+        .back-buttons {
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>测试用例审核</h1>
+            <p>查看、编辑和审核生成的测试用例</p>
+        </div>
+
+        <div class="card">
+            <div class="toolbar">
+                <div class="back-buttons">
+                    <a href="/" class="back-btn">← 返回首页</a>
+                    <a href="#" class="back-btn" onclick="goBack()">← 返回上一页</a>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="searchInput" class="search-input" placeholder="搜索测试用例...">
+                    <button class="btn" onclick="filterTestCases()">搜索</button>
+                </div>
+            </div>
+
+            <div id="testcaseInfo" class="testcase-info">
+                <div class="loading">正在加载测试用例信息...</div>
+            </div>
+
+            <div id="alert"></div>
+
+            <!-- 批量审核工具栏 -->
+            <div class="action-buttons" style="background: #f8f9ff; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="selectAllTestcases" onchange="toggleSelectAllTestcases(this.checked)" style="width: 18px; height: 18px; cursor: pointer;">
+                        <label for="selectAllTestcases" style="font-weight: 600; cursor: pointer;">全选</label>
+                        <span id="selectedTestcaseCount" style="color: #666;">已选择: 0</span>
+                    </div>
+                    <button class="btn btn-success" id="batchApproveBtn" onclick="batchApproveSelected()" disabled>✅ 批量审核通过</button>
+                    <button class="btn btn-danger" id="batchRejectBtn" onclick="batchRejectSelected()" disabled>❌ 批量审核拒绝</button>
+                    <button class="btn btn-danger" id="batchDeleteBtn" onclick="batchDeleteSelected()" disabled>🗑️ 批量删除</button>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn" onclick="saveTestCases()">💾 保存修改</button>
+                <button class="btn btn-secondary" onclick="regenerateTestCases()">🔄 重新生成</button>
+                <!-- <button class="btn btn-danger" onclick="clearAllTestCases()">🗑️ 一键清除全部</button> -->
+                <button class="btn" onclick="downloadYAML()">📥 下载YAML文件</button>
+                <button class="btn btn-primary" id="executeBtn" onclick="executeTestCases()" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">🧪 调试用例</button>
+                <button class="btn" id="viewReportBtn" onclick="viewTestReport()" style="background: #ccc; cursor: not-allowed;" disabled>📊 查看调试报告</button>
+                <button class="btn" onclick="archiveTestCase()" style="background: linear-gradient(135deg, #ff9800 0%, #ff5722 100%);">📦 归档用例</button>
+                <button class="btn btn-disabled" disabled title="功能开发中，敬请期待" style="background: #ccc; cursor: not-allowed;">🐍 生成PY脚本（待开发）</button>
+            </div>
+            
+            <!-- 执行结果提示区域 -->
+            <div id="executionResult" style="display: none; margin: 15px 0; padding: 20px; border-radius: 10px; background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-left: 5px solid #4caf50; box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);">
+                <div style="display: flex; align-items: flex-start; gap: 15px;">
+                    <div style="font-size: 36px; line-height: 1;">✅</div>
+                    <div style="flex: 1;">
+                        <div style="font-size: 1.2em; font-weight: 700; color: #2e7d32; margin-bottom: 12px;">用例执行成功</div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                            <div style="background: white; padding: 10px 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                <div style="font-size: 0.8em; color: #666; margin-bottom: 3px;">📅 提交时间</div>
+                                <div style="font-weight: 600; color: #333;" id="executionTime"></div>
+                            </div>
+                            <div style="background: white; padding: 10px 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                <div style="font-size: 0.8em; color: #666; margin-bottom: 3px;">🔖 SVN版本</div>
+                                <div style="font-weight: 600; color: #333;" id="svnRevision"></div>
+                            </div>
+                            <div style="background: white; padding: 10px 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                <div style="font-size: 0.8em; color: #666; margin-bottom: 3px;">📝 用例数量</div>
+                                <div style="font-weight: 600; color: #333;" id="testcaseCount"></div>
+                            </div>
+                        </div>
+                        <div id="executionWarning" style="display: none; margin-top: 10px; padding: 8px 12px; background: #fff3cd; border-radius: 4px; font-size: 0.85em; color: #856404;">
+                            ⚠️ <span id="executionWarningText"></span>
+                        </div>
+                        <div id="executionSteps" style="display: none; margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 5px solid #17a2b8;">
+                            <div style="font-weight: 600; color: #17a2b8; margin-bottom: 10px;">执行进度</div>
+                            <div id="stepList" style="display: flex; flex-direction: column; gap: 8px;">
+                                <!-- 步骤将动态添加 -->
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="closeExecutionResult()" style="background: transparent; border: none; color: #666; font-size: 20px; cursor: pointer; padding: 0; line-height: 1;" title="关闭">✕</button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <div id="loading" class="loading">正在加载测试用例表格...</div>
+                <table id="testcaseTable" class="testcase-table" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th class="checkbox-cell">选择</th>
+                            <th style="width: 100px;">用例ID</th>
+                            <th style="width: 150px;">用例名称</th>
+                            <th style="width: 120px;">接口名称</th>
+                            <th style="width: 80px;">请求方法</th>
+                            <th style="width: 200px;">URL路径</th>
+                            <th style="width: 200px;">请求头</th>
+                            <th style="width: 200px;">请求参数</th>
+                            <th style="width: 120px;">预期状态码</th>
+                            <th style="width: 200px;">预期响应</th>
+                            <th style="width: 120px;">测试类型</th>
+                            <th style="width: 80px;">优先级</th>
+                            <th style="width: 150px;">测试描述</th>
+                            <th style="width: 150px;">前置条件</th>
+                            <th style="width: 150px;">后置条件</th>
+                            <th style="width: 100px;">标签</th>
+                            <th style="width: 100px;">审核状态</th>
+                            <th style="width: 80px;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="testcaseBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTestCases = [];
+        let originalTestCases = [];
+        let currentCollectionId = '';
+        let currentInterfaceId = '';
+        let currentPythonCode = ''; // 存储生成的Python代码
+        let currentBuildNumber = null; // 存储Jenkins构建号
+        let currentIsDebug = true; // 存储是否为调试模式
+
+        // 页面加载时从URL参数获取数据或从服务器加载已保存的测试用例
+        window.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const jsonContent = urlParams.get('json_content');
+            const collectionId = urlParams.get('collection_id');
+            const interfaceId = urlParams.get('interface_id');
+
+            console.log('URL参数检查:', {
+                collectionId,
+                interfaceId,
+                jsonContentLength: jsonContent ? jsonContent.length : 0
+            });
+
+            if (collectionId && interfaceId) {
+                currentCollectionId = collectionId;
+                currentInterfaceId = interfaceId;
+                
+                if (jsonContent) {
+                    try {
+                        // 从URL参数加载新生成的JSON格式测试用例
+                        const decodedJSON = decodeURIComponent(jsonContent);
+                        console.log('解码后的JSON长度:', decodedJSON.length);
+                        console.log('JSON前100字符:', decodedJSON.substring(0, 100));
+                        
+                        loadTestCasesFromJSON(decodedJSON);
+                    } catch (error) {
+                        console.error('JSON解码失败:', error);
+                        showError('JSON内容解码失败: ' + error.message);
+                        // 尝试从服务器加载已保存的测试用例作为备选方案
+                        await loadSavedTestCases(collectionId, interfaceId);
+                    }
+                } else {
+                    console.log('未找到JSON内容，从服务器加载已保存的测试用例');
+                    // 从服务器加载已保存的测试用例
+                    await loadSavedTestCases(collectionId, interfaceId);
+                }
+                
+                loadInterfaceInfo(collectionId, interfaceId);
+            } else {
+                showError('缺少必要的参数，无法加载测试用例');
+            }
+        });
+
+        async function loadSavedTestCases(collectionId, interfaceId) {
+            try {
+                const response = await fetch(`/api/testcase-status?collection_id=${collectionId}&interface_id=${interfaceId}`);
+                const data = await response.json();
+
+                if (response.ok && data.has_testcase) {
+                    // 从服务器加载已保存的测试用例
+                    const testcaseResponse = await fetch(`/api/testcase?collection_id=${collectionId}&interface_id=${interfaceId}`);
+                    const testcaseData = await testcaseResponse.json();
+                    
+                    if (testcaseResponse.ok) {
+                        // 只支持JSON格式
+                        if (testcaseData.testcase.json_content && testcaseData.testcase.json_content.trim()) {
+                            loadTestCasesFromJSON(testcaseData.testcase.json_content);
+                            showSuccess('已加载已保存的JSON格式测试用例');
+                        } else {
+                            showError('测试用例内容为空或格式不支持');
+                        }
+                    } else {
+                        showError('加载测试用例失败: ' + testcaseData.error);
+                    }
+                } else {
+                    showError('该接口暂无已保存的测试用例');
+                }
+            } catch (error) {
+                console.error('加载已保存测试用例失败:', error);
+                showError('加载已保存测试用例失败: ' + error.message);
+            }
+        }
+
+        async function loadInterfaceInfo(collectionId, interfaceId) {
+            try {
+                console.log('开始加载接口信息:', { collectionId, interfaceId });
+                const response = await fetch(`/api/interface/${collectionId}/${interfaceId}`);
+                
+                console.log('接口信息响应状态:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('接口信息:', data);
+                    
+                    const iface = data.interface;
+                    document.getElementById('testcaseInfo').innerHTML = `
+                        <h3>${iface.summary || '接口详情'}</h3>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <div class="info-label">接口ID</div>
+                                <div class="info-value">${interfaceId}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">请求方法</div>
+                                <div class="info-value">${iface.method}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">URL路径</div>
+                                <div class="info-value">${iface.path}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">集合ID</div>
+                                <div class="info-value">${collectionId}</div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    console.log('接口信息显示完成');
+                } else {
+                    const errorText = await response.text();
+                    console.error('接口信息加载失败:', response.status, errorText);
+                    showError('加载接口信息失败: ' + response.status);
+                }
+            } catch (error) {
+                console.error('加载接口信息时发生错误:', error);
+                showError('加载接口信息时发生错误: ' + error.message);
+            }
+        }
+
+        function loadTestCasesFromJSON(jsonContent) {
+            console.log('开始解析JSON内容，总长度:', jsonContent.length);
+            console.log('JSON内容预览:', jsonContent.substring(0, 200));
+            
+            try {
+                const data = JSON.parse(jsonContent);
+                console.log('JSON解析结果:', data);
+                
+                // 支持多种JSON格式
+                let testCasesArray = [];
+                
+                if (Array.isArray(data)) {
+                    // 直接是数组格式
+                    testCasesArray = data;
+                    console.log('检测到数组格式的测试用例');
+                } else if (data && typeof data === 'object' && data.test_cases) {
+                    // 包含test_cases字段的对象格式
+                    testCasesArray = data.test_cases;
+                    console.log('检测到包含test_cases字段的对象格式');
+                } else if (data && typeof data === 'object' && data.testcases) {
+                    // 包含testcases字段的对象格式
+                    testCasesArray = data.testcases;
+                    console.log('检测到包含testcases字段的对象格式');
+                } else if (data && typeof data === 'object') {
+                    // 单个测试用例对象
+                    testCasesArray = [data];
+                    console.log('检测到单个测试用例对象格式');
+                } else {
+                    showError('JSON格式不正确，期望数组或包含test_cases/testcases字段的对象');
+                    return;
+                }
+                
+                currentTestCases = testCasesArray.map((testCase, index) => {
+                    // 标准化测试用例字段
+                    return {
+                        test_case_id: testCase.test_case_id || testCase.id || `test_${index + 1}`,
+                        test_case_name: testCase.test_case_name || testCase.name || `测试用例 ${index + 1}`,
+                        api_name: testCase.api_name || testCase.apiName || '',
+                        method: testCase.method || '',
+                        url: testCase.url || testCase.path || '',
+                        headers: testCase.headers || testCase.request_headers || '',
+                        request_data: testCase.request_data || testCase.requestData || testCase.parameters || '',
+                        expected_status_code: testCase.expected_status_code || testCase.expectedStatusCode || 200,
+                        expected_response: testCase.expected_response || testCase.expectedResponse || '',
+                        test_type: testCase.test_type || testCase.testType || '功能测试',
+                        description: testCase.description || testCase.desc || '',
+                        tags: testCase.tags || '',
+                        priority: testCase.priority || '中',
+                        preconditions: testCase.preconditions || testCase.preConditions || '',
+                        postconditions: testCase.postconditions || testCase.postConditions || '',
+                        status: 'pending', // 默认状态为待审核
+                        id: index // 临时ID
+                    };
+                });
+                
+                console.log(`成功解析 ${currentTestCases.length} 个测试用例`);
+                console.log('测试用例数据:', currentTestCases);
+                
+                if (currentTestCases.length === 0) {
+                    showError('未能解析出任何测试用例，请检查JSON格式');
+                    return;
+                }
+                
+                originalTestCases = JSON.parse(JSON.stringify(currentTestCases));
+                displayTestCases();
+                
+            } catch (error) {
+                console.error('JSON解析失败:', error);
+                showError('解析JSON失败: ' + error.message);
+            }
+        }
+
+        function loadTestCasesFromYAML(yamlContent) {
+            console.log('开始解析YAML内容，总长度:', yamlContent.length);
+            console.log('YAML内容预览:', yamlContent.substring(0, 200));
+            
+            try {
+                const lines = yamlContent.trim().split('\n');
+                console.log('YAML行数:', lines.length);
+                
+                if (lines.length < 2) {
+                    showError('YAML内容格式不正确，至少需要包含标题行和数据行');
+                    console.error('YAML行数不足:', lines.length);
+                    return;
+                }
+                
+                const headers = parseYAMLLine(lines[0]);
+                console.log('YAML标题:', headers);
+                
+                currentTestCases = [];
+                
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (line) {
+                        console.log(`解析第${i}行:`, line);
+                        const values = parseYAMLLine(line);
+                        console.log(`解析结果:`, values);
+                        
+                        if (values.length === headers.length) {
+                            const testCase = {};
+                            headers.forEach((header, index) => {
+                                testCase[header] = values[index] || '';
+                            });
+                            testCase.status = 'pending'; // 默认状态为待审核
+                            testCase.id = i; // 临时ID
+                            currentTestCases.push(testCase);
+                        } else {
+                            console.warn(`第${i}行列数不匹配: 期望${headers.length}列，实际${values.length}列`);
+                        }
+                    }
+                }
+                
+                console.log(`成功解析 ${currentTestCases.length} 个测试用例`);
+                console.log('测试用例数据:', currentTestCases);
+                
+                if (currentTestCases.length === 0) {
+                    showError('未能解析出任何测试用例，请检查YAML格式');
+                    return;
+                }
+                
+                originalTestCases = JSON.parse(JSON.stringify(currentTestCases));
+                displayTestCases();
+                
+            } catch (error) {
+                console.error('YAML解析失败:', error);
+                showError('解析YAML失败: ' + error.message);
+            }
+        }
+
+
+
+        // 格式化JSON对象为可读字符串
+        function formatJSONField(value) {
+            if (!value) return '';
+            
+            // 如果已经是字符串，尝试解析为JSON
+            if (typeof value === 'string') {
+                try {
+                    const parsed = JSON.parse(value);
+                    return JSON.stringify(parsed, null, 2);
+                } catch (e) {
+                    // 如果不是有效的JSON，直接返回原字符串
+                    return value;
+                }
+            }
+            
+            // 如果是对象，直接格式化为JSON字符串
+            if (typeof value === 'object') {
+                return JSON.stringify(value, null, 2);
+            }
+            
+            return String(value);
+        }
+
+        function displayTestCases() {
+            const tbody = document.getElementById('testcaseBody');
+            const table = document.getElementById('testcaseTable');
+            const loading = document.getElementById('loading');
+
+            if (currentTestCases.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="18" style="text-align: center; color: #999;">暂无测试用例数据</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = currentTestCases.map((testCase, index) => {
+                const statusClass = `status-${testCase.status}`;
+                const rowClass = `row-${testCase.status}`;
+                const statusText = {
+                    'pending': '待审核',
+                    'approved': '已通过',
+                    'rejected': '已拒绝'
+                }[testCase.status] || '待审核';
+                
+                // 审核通过的用例不能删除
+                const canDelete = testCase.status !== 'approved';
+                const deleteDisabled = !canDelete ? 'disabled' : '';
+                const deleteStyle = !canDelete ? 'opacity: 0.5; cursor: not-allowed;' : '';
+
+                return `
+                    <tr class="${rowClass}" data-index="${index}" data-status="${testCase.status}">
+                            <td class="checkbox-cell">
+                                <input type="checkbox" class="testcase-checkbox" data-index="${index}" onchange="updateBatchTestcaseButtons()">
+                            </td>
+                            <td class="editable-cell">
+                                <input type="text" value="${testCase.test_case_id || ''}" 
+                                       onchange="updateTestCase(${index}, 'test_case_id', this.value)">
+                            </td>
+                            <td class="editable-cell">
+                                <input type="text" value="${testCase.test_case_name || ''}" 
+                                       onchange="updateTestCase(${index}, 'test_case_name', this.value)">
+                            </td>
+                            <td class="editable-cell">
+                                <input type="text" value="${testCase.api_name || ''}" 
+                                       onchange="updateTestCase(${index}, 'api_name', this.value)">
+                            </td>
+                            <td class="editable-cell">
+                                <input type="text" value="${testCase.method || ''}" 
+                                       onchange="updateTestCase(${index}, 'method', this.value)">
+                            </td>
+                            <td class="editable-cell">
+                                <input type="text" value="${testCase.url || ''}" 
+                                       onchange="updateTestCase(${index}, 'url', this.value)">
+                            </td>
+                            <td class="editable-cell">
+                                <textarea onchange="updateTestCase(${index}, 'headers', this.value)">${formatJSONField(testCase.headers)}</textarea>
+                            </td>
+                            <td class="editable-cell">
+                                <textarea onchange="updateTestCase(${index}, 'request_data', this.value)">${formatJSONField(testCase.request_data)}</textarea>
+                            </td>
+                            <td class="editable-cell">
+                                <input type="text" value="${testCase.expected_status_code || ''}" 
+                                       onchange="updateTestCase(${index}, 'expected_status_code', this.value)">
+                            </td>
+                            <td class="editable-cell">
+                                <textarea onchange="updateTestCase(${index}, 'expected_response', this.value)">${formatJSONField(testCase.expected_response)}</textarea>
+                            </td>
+                            <td class="editable-cell">
+                                <input type="text" value="${testCase.test_type || ''}" 
+                                       onchange="updateTestCase(${index}, 'test_type', this.value)">
+                            </td>
+                            <td class="editable-cell">
+                                <input type="text" value="${testCase.priority || ''}" 
+                                       onchange="updateTestCase(${index}, 'priority', this.value)">
+                            </td>
+                            <td class="editable-cell">
+                                <textarea onchange="updateTestCase(${index}, 'description', this.value)">${testCase.description || ''}</textarea>
+                            </td>
+                            <td class="editable-cell">
+                                <textarea onchange="updateTestCase(${index}, 'preconditions', this.value)">${testCase.preconditions || ''}</textarea>
+                            </td>
+                            <td class="editable-cell">
+                                <textarea onchange="updateTestCase(${index}, 'postconditions', this.value)">${testCase.postconditions || ''}</textarea>
+                            </td>
+                            <td class="editable-cell">
+                                <textarea onchange="updateTestCase(${index}, 'tags', this.value)">${formatJSONField(testCase.tags)}</textarea>
+                            </td>
+                            <td>
+                                <span class="status-badge ${statusClass}">${statusText}</span>
+                            </td>
+                            <td>
+                                <button class="btn btn-danger" onclick="deleteTestCase(${index})" ${deleteDisabled} style="padding: 4px 8px; font-size: 0.8em; background-color: #dc3545; border-color: #dc3545; color: white; ${deleteStyle}">🗑️ 删除</button>
+                            </td>
+                        </tr>
+                `;
+            }).join('');
+
+            loading.style.display = 'none';
+            table.style.display = 'table';
+            updateBatchTestcaseButtons();
+        }
+
+        function updateTestCase(index, field, value) {
+            currentTestCases[index][field] = value;
+        }
+
+        async function deleteTestCase(index) {
+            const testCase = currentTestCases[index];
+            
+            // 审核通过的用例不能删除
+            if (testCase.status === 'approved') {
+                showError('❌ 审核通过的测试用例不能删除');
+                return;
+            }
+            
+            if (confirm('确定要删除这个测试用例吗？删除后将自动保存到服务器。')) {
+                currentTestCases.splice(index, 1);
+                displayTestCases();
+                
+                // 自动保存到服务器
+                try {
+                    const response = await fetch('/api/save-testcases', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            collection_id: currentCollectionId,
+                            interface_id: currentInterfaceId,
+                            testcases: currentTestCases
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        showSuccess('测试用例已删除并成功保存到服务器');
+                    } else {
+                        showError('删除成功，但保存失败: ' + data.error);
+                    }
+                } catch (error) {
+                    showError('删除成功，但保存失败: ' + error.message);
+                }
+            }
+        }
+
+        async function saveTestCases() {
+            try {
+                // 保存测试用例到服务器
+                const response = await fetch('/api/save-testcases', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        collection_id: currentCollectionId,
+                        interface_id: currentInterfaceId,
+                        testcases: currentTestCases
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showSuccess('测试用例已成功保存到服务器');
+                } else {
+                    showError('保存失败: ' + data.error);
+                }
+            } catch (error) {
+                showError('保存失败: ' + error.message);
+            }
+        }
+
+        async function regenerateTestCases() {
+            if (!confirm('确定要重新生成测试用例吗？新生成的测试用例将追加到现有用例下方，用例编码自动递增。')) {
+                return;
+            }
+
+            try {
+                showLoading('正在重新生成测试用例...');
+                
+                const response = await fetch(`/api/generate-json/${currentCollectionId}/${currentInterfaceId}`, {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (data.json_content) {
+                        // 解析新生成的测试用例
+                        const newTestCases = parseJSONTestCases(data.json_content);
+                        
+                        if (newTestCases && newTestCases.length > 0) {
+                            // 获取当前最大的测试用例编号
+                            const maxId = getMaxTestCaseId();
+                            
+                            // 为新测试用例分配递增的编号和唯一名称
+                            newTestCases.forEach((testCase, index) => {
+                                const newId = maxId + index + 1;
+                                testCase.test_case_id = `TC${String(newId).padStart(3, '0')}`;
+                                
+                                // 生成唯一的测试用例名称
+                                testCase.test_case_name = generateUniqueTestCaseName(testCase.test_case_name || `测试用例 ${newId}`);
+                            });
+                            
+                            // 追加到现有测试用例
+                            currentTestCases = currentTestCases.concat(newTestCases);
+                            displayTestCases();
+                            
+                            // 自动保存
+                            await saveTestCases();
+                            
+                            showSuccess(`✅ 成功追加 ${newTestCases.length} 个新测试用例，用例编码已自动递增`);
+                        } else {
+                            showError('未能解析出新的测试用例');
+                        }
+                    } else if (data.yaml_content) {
+                        // 向后兼容：如果API仍然返回YAML内容
+                        loadTestCasesFromYAML(data.yaml_content);
+                        showSuccess('测试用例重新生成成功（YAML格式）');
+                    } else {
+                        showError('重新生成失败：未返回有效的测试用例内容');
+                    }
+                } else {
+                    showError('重新生成失败: ' + data.error);
+                }
+            } catch (error) {
+                showError('重新生成失败: ' + error.message);
+            }
+        }
+
+        // 解析JSON测试用例（辅助函数）
+        function parseJSONTestCases(jsonContent) {
+            try {
+                const data = JSON.parse(jsonContent);
+                let testCasesArray = [];
+                
+                if (Array.isArray(data)) {
+                    testCasesArray = data;
+                } else if (data && typeof data === 'object' && data.test_cases) {
+                    testCasesArray = data.test_cases;
+                } else if (data && typeof data === 'object' && data.testcases) {
+                    testCasesArray = data.testcases;
+                } else if (data && typeof data === 'object') {
+                    testCasesArray = [data];
+                }
+                
+                return testCasesArray.map((testCase, index) => ({
+                    test_case_id: testCase.test_case_id || testCase.id || `test_${index + 1}`,
+                    test_case_name: testCase.test_case_name || testCase.name || `测试用例 ${index + 1}`,
+                    api_name: testCase.api_name || testCase.apiName || '',
+                    method: testCase.method || '',
+                    url: testCase.url || testCase.path || '',
+                    headers: testCase.headers || testCase.request_headers || '',
+                    request_data: testCase.request_data || testCase.requestData || testCase.parameters || '',
+                    expected_status_code: testCase.expected_status_code || testCase.expectedStatusCode || 200,
+                    expected_response: testCase.expected_response || testCase.expectedResponse || '',
+                    test_type: testCase.test_type || testCase.testType || '功能测试',
+                    description: testCase.description || testCase.desc || '',
+                    tags: testCase.tags || '',
+                    priority: testCase.priority || '中',
+                    preconditions: testCase.preconditions || testCase.preConditions || '',
+                    postconditions: testCase.postconditions || testCase.postConditions || '',
+                    status: 'pending',
+                    id: index
+                }));
+            } catch (error) {
+                console.error('解析JSON测试用例失败:', error);
+                return [];
+            }
+        }
+        
+        // 获取当前最大的测试用例编号
+        function getMaxTestCaseId() {
+            if (currentTestCases.length === 0) return 0;
+            
+            let maxId = 0;
+            currentTestCases.forEach(testCase => {
+                const id = testCase.test_case_id || '';
+                // 提取数字部分，例如 TC001 -> 1
+                const match = id.match(/\d+/);
+                if (match) {
+                    const num = parseInt(match[0], 10);
+                    if (num > maxId) maxId = num;
+                }
+            });
+            
+            return maxId;
+        }
+        
+        // 生成唯一的测试用例名称
+        function generateUniqueTestCaseName(baseName) {
+            // 检查基础名称是否已存在
+            const existingNames = currentTestCases.map(tc => tc.test_case_name);
+            
+            // 如果名称不存在，直接返回
+            if (!existingNames.includes(baseName)) {
+                return baseName;
+            }
+            
+            // 如果名称已存在，尝试添加数字后缀
+            let counter = 1;
+            let newName = `${baseName}${counter}`;
+            
+            // 持续递增直到找到不重复的名称
+            while (existingNames.includes(newName)) {
+                counter++;
+                newName = `${baseName}${counter}`;
+            }
+            
+            console.log(`[名称去重] 原名称 "${baseName}" 已存在，生成新名称 "${newName}"`);
+            return newName;
+        }
+        
+        // 一键清除全部测试用例
+        async function clearAllTestCases() {
+            // 检查是否有审核通过的用例
+            const approvedCount = currentTestCases.filter(tc => tc.status === 'approved').length;
+            if (approvedCount > 0) {
+                showError(`❌ 有 ${approvedCount} 个审核通过的测试用例不能清除，请先将其状态改为待审核或已拒绝`);
+                return;
+            }
+            
+            if (!confirm('确定要清除所有测试用例吗？此操作将保留一条默认数据，所有字段为默认值。')) {
+                return;
+            }
+            
+            // 创建一条默认测试用例
+            const defaultTestCase = {
+                test_case_id: 'TC001',
+                test_case_name: '默认测试用例',
+                api_name: '',
+                method: 'GET',
+                url: '',
+                headers: '{}',
+                request_data: '{}',
+                expected_status_code: 200,
+                expected_response: '{}',
+                test_type: '功能测试',
+                description: '默认测试用例描述',
+                tags: '',
+                priority: '中',
+                preconditions: '',
+                postconditions: '',
+                status: 'pending',
+                id: 0
+            };
+            
+            currentTestCases = [defaultTestCase];
+            displayTestCases();
+            
+            // 自动保存到服务器
+            try {
+                await saveTestCases();
+                showSuccess('✅ 已清除所有测试用例，保留一条默认数据');
+            } catch (error) {
+                showError('清除成功，但保存失败: ' + error.message);
+            }
+        }
+
+        // ========== 批量审核功能 ==========
+        
+        // 全选/取消全选测试用例
+        function toggleSelectAllTestcases(checked) {
+            const checkboxes = document.querySelectorAll('.testcase-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = checked;
+            });
+            updateBatchTestcaseButtons();
+        }
+
+        // 更新批量操作按钮状态
+        function updateBatchTestcaseButtons() {
+            const checkboxes = document.querySelectorAll('.testcase-checkbox:checked');
+            const count = checkboxes.length;
+            const selectedCountSpan = document.getElementById('selectedTestcaseCount');
+            const batchApproveBtn = document.getElementById('batchApproveBtn');
+            const batchRejectBtn = document.getElementById('batchRejectBtn');
+            const batchDeleteBtn = document.getElementById('batchDeleteBtn');
+            const selectAllCheckbox = document.getElementById('selectAllTestcases');
+            
+            if (selectedCountSpan) {
+                selectedCountSpan.textContent = `已选择: ${count}`;
+            }
+            
+            if (batchApproveBtn) {
+                batchApproveBtn.disabled = count === 0;
+            }
+            
+            if (batchRejectBtn) {
+                batchRejectBtn.disabled = count === 0;
+            }
+            
+            if (batchDeleteBtn) {
+                batchDeleteBtn.disabled = count === 0;
+            }
+            
+            // 更新全选复选框状态
+            if (selectAllCheckbox) {
+                const allCheckboxes = document.querySelectorAll('.testcase-checkbox');
+                selectAllCheckbox.checked = allCheckboxes.length > 0 && count === allCheckboxes.length;
+                selectAllCheckbox.indeterminate = count > 0 && count < allCheckboxes.length;
+            }
+        }
+
+        // 批量审核通过
+        async function batchApproveSelected() {
+            const checkboxes = document.querySelectorAll('.testcase-checkbox:checked');
+            const indices = Array.from(checkboxes).map(cb => parseInt(cb.dataset.index));
+            
+            if (indices.length === 0) {
+                showError('请至少选择一个测试用例');
+                return;
+            }
+            
+            if (!confirm(`确定要将选中的 ${indices.length} 个测试用例标记为审核通过吗？`)) {
+                return;
+            }
+            
+            indices.forEach(index => {
+                currentTestCases[index].status = 'approved';
+            });
+            
+            displayTestCases();
+            await saveTestCases();
+            showSuccess(`✅ 已将 ${indices.length} 个测试用例标记为审核通过`);
+        }
+
+        // 批量审核拒绝
+        async function batchRejectSelected() {
+            const checkboxes = document.querySelectorAll('.testcase-checkbox:checked');
+            const indices = Array.from(checkboxes).map(cb => parseInt(cb.dataset.index));
+            
+            if (indices.length === 0) {
+                showError('请至少选择一个测试用例');
+                return;
+            }
+            
+            if (!confirm(`确定要将选中的 ${indices.length} 个测试用例标记为审核拒绝吗？`)) {
+                return;
+            }
+            
+            indices.forEach(index => {
+                currentTestCases[index].status = 'rejected';
+            });
+            
+            displayTestCases();
+            await saveTestCases();
+            showSuccess(`✅ 已将 ${indices.length} 个测试用例标记为审核拒绝`);
+        }
+
+        // 批量删除选中的测试用例
+        async function batchDeleteSelected() {
+            const checkboxes = document.querySelectorAll('.testcase-checkbox:checked');
+            const indices = Array.from(checkboxes).map(cb => parseInt(cb.dataset.index));
+            
+            if (indices.length === 0) {
+                showError('请至少选择一个测试用例');
+                return;
+            }
+            
+            // 检查是否有审核通过的用例
+            const approvedIndices = indices.filter(index => currentTestCases[index].status === 'approved');
+            if (approvedIndices.length > 0) {
+                showError(`❌ 选中的测试用例中有 ${approvedIndices.length} 个已审核通过，不能删除`);
+                return;
+            }
+            
+            if (!confirm(`确定要删除选中的 ${indices.length} 个测试用例吗？此操作不可恢复！`)) {
+                return;
+            }
+            
+            // 按索引从大到小排序，避免删除时索引错乱
+            indices.sort((a, b) => b - a);
+            indices.forEach(index => {
+                currentTestCases.splice(index, 1);
+            });
+            
+            displayTestCases();
+            await saveTestCases();
+            showSuccess(`✅ 已删除 ${indices.length} 个测试用例`);
+        }
+
+        async function downloadYAML() {
+            try {
+                // 将测试用例转换为YAML格式
+                const yamlContent = convertToYAML(currentTestCases);
+                
+                if (!yamlContent) {
+                    showError('无法生成YAML内容，测试用例为空');
+                    return;
+                }
+                
+                // 调用后端API下载YAML文件
+                const response = await fetch('/api/download-yaml', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        yaml_content: yamlContent,
+                        filename: `test_cases_${currentInterfaceId}_${new Date().getTime()}.yaml`
+                    })
+                });
+                
+                if (response.ok) {
+                    // 创建下载链接
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `test_cases_${currentInterfaceId}_${new Date().getTime()}.yaml`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
+                    
+                    showSuccess('YAML文件下载成功');
+                } else {
+                    const errorData = await response.json();
+                    showError('下载YAML文件失败: ' + (errorData.error || '服务器错误'));
+                }
+            } catch (error) {
+                showError('下载YAML文件失败: ' + error.message);
+            }
+        }
+
+        // ========== 用例执行和报告查看功能 ==========
+        
+        // 执行测试用例（提交到SVN并执行）
+        async function executeTestCases() {
+            if (currentTestCases.length === 0) {
+                showError('没有测试用例可执行');
+                return;
+            }
+            
+            const confirmMessage = `
+🧪 确定要调试当前用例吗？
+
+📊 调试信息：
+   • 用例数量：${currentTestCases.length} 个
+   • 执行环境：调试环境
+   • SVN路径：svn://172.16.9.XXX/repo/jiaoben/jk/data_yaml_debug
+   • Jenkins Job：AI-jk-debug
+
+📝 操作流程：
+   1. 生成YAML测试用例文件
+   2. 提交到调试SVN目录
+   3. 触发Jenkins调试任务
+
+💡 提示：调试通过后，可点击"归档用例"提交到正式环境
+            `.trim();
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            try {
+                // 清空之前的步骤
+                clearExecutionSteps();
+                
+                // 禁用查看报告按钮
+                disableViewReportButton();
+                
+                showLoading('正在执行测试用例...');
+                
+                // 将测试用例转换为YAML格式
+                const yamlContent = convertToYAML(currentTestCases);
+                
+                if (!yamlContent) {
+                    showError('无法生成YAML内容，测试用例为空');
+                    return;
+                }
+                
+                // 调用后端API执行测试用例
+                const response = await fetch('/api/execute-testcases', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        collection_id: currentCollectionId,
+                        interface_id: currentInterfaceId,
+                        yaml_content: yamlContent,
+                        testcases: currentTestCases,
+                        is_debug: true  // 默认使用调试模式
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // 显示执行成功信息
+                    const executionResult = document.getElementById('executionResult');
+                    const executionTime = document.getElementById('executionTime');
+                    const svnRevision = document.getElementById('svnRevision');
+                    const testcaseCount = document.getElementById('testcaseCount');
+                    const executionWarning = document.getElementById('executionWarning');
+                    const executionWarningText = document.getElementById('executionWarningText');
+                    
+                    if (executionResult && executionTime && svnRevision && testcaseCount) {
+                        executionTime.textContent = data.execution_time || new Date().toLocaleString('zh-CN');
+                        svnRevision.textContent = data.svn_revision || '待配置';
+                        testcaseCount.textContent = data.testcase_count || currentTestCases.length;
+                        
+                        // 显示警告信息（如果有）
+                        if (data.warning) {
+                            executionWarning.style.display = 'block';
+                            executionWarningText.textContent = data.warning;
+                        } else {
+                            executionWarning.style.display = 'none';
+                        }
+                        
+                        executionResult.style.display = 'block';
+                        
+                        // 滚动到结果区域
+                        executionResult.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                    
+                    // 保存构建号和调试模式
+                    if (data.build_number) {
+                        currentBuildNumber = data.build_number;
+                        
+                        // 添加执行步骤
+                        addExecutionStep('用例上传成功', 'success');
+                        addExecutionStep('开始执行用例...', 'success');
+                        addExecutionStep(`Jenkins构建 #${data.build_number} 已触发`, 'success');
+                        addExecutionStep('等待Jenkins构建完成...', 'running');
+                        
+                        // 开始轮询Jenkins构建状态
+                        const jobName = data.is_debug ? 'AI-jk-debug' : 'AI-jk';
+                        pollJenkinsBuildStatus(jobName, data.build_number);
+                    }
+                    
+                    showSuccess('✅ 测试用例执行成功！');
+                } else {
+                    showError('执行失败: ' + (data.error || '未知错误'));
+                }
+            } catch (error) {
+                showError('执行失败: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 查看测试报告
+        async function viewTestReport() {
+            try {
+                // 检查是否有构建号
+                if (!currentBuildNumber) {
+                    showError('⚠️ 请先执行用例以获取构建号');
+                    return;
+                }
+                
+                // 使用构建号获取报告URL
+                const response = await fetch(`/api/get-report-url?build_number=${currentBuildNumber}&is_debug=${currentIsDebug}`);
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // 在新标签页打开报告
+                    window.open(data.report_url, '_blank');
+                    showSuccess('正在打开测试报告...');
+                } else {
+                    showError('⚠️ ' + (data.error || '测试报告地址未配置') + '\n\n请在.env文件中配置以下参数：\n- TEST_REPORT_URL: 报告服务器地址\n- TEST_REPORT_DEBUG_URL: 调试报告服务器地址');
+                }
+            } catch (error) {
+                showError('获取报告地址失败: ' + error.message);
+            }
+        }
+
+        async function generateOrViewPython() {
+            // 如果已经有生成的Python代码，直接展示
+            if (currentPythonCode) {
+                showPythonEditor(currentPythonCode);
+                return;
+            }
+            
+            // 否则调用Dify接口生成Python脚本
+            await generatePythonScript();
+        }
+
+        async function generatePythonScript() {
+            if (currentTestCases.length === 0) {
+                showError('没有测试用例数据，无法生成Python脚本');
+                return;
+            }
+            
+            try {
+                showLoading('正在生成Python脚本（使用YAML文件上传方式）...');
+                
+                // 调用新的YAML文件上传API
+                const response = await fetch('/api/generate-python-yaml', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        collection_id: currentCollectionId,
+                        interface_id: currentInterfaceId,
+                        user_id: 'user_' + Date.now()
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    currentPythonCode = data.python_code;
+                    showPythonEditor(data.python_code, true, '');
+                    showSuccess('✅ Python脚本生成成功！');
+                } else {
+                    showError('生成Python脚本失败: ' + (data.error || '服务器错误'));
+                }
+            } catch (error) {
+                showError('生成Python脚本失败: ' + error.message);
+            }
+        }
+
+        function showPythonEditor(pythonCode, syntaxValid = true, syntaxError = '') {
+            const editorHTML = `
+                <div id="pythonEditorModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 20px; border-radius: 8px; width: 80%; max-width: 900px; max-height: 80%; overflow: auto;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3 style="margin: 0; color: #333;">🐍 Python测试脚本</h3>
+                            <button onclick="closePythonEditor()" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">✕ 关闭</button>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <button class="btn btn-small" onclick="regeneratePython()" style="background: #28a745; margin-right: 10px;">🔄 重新生成</button>
+                            <button class="btn btn-small" onclick="savePython()" style="background: #17a2b8;">💾 保存代码</button>
+                            <button class="btn btn-small" onclick="downloadPython()" style="background: #6c757d;">📥 下载Python文件</button>
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            ${syntaxValid ? 
+                                '<span style="color: #28a745; font-weight: bold;">✅ 语法验证通过</span>' : 
+                                `<span style="color: #dc3545; font-weight: bold;">❌ 语法错误: ${syntaxError || '未知错误'}</span>`
+                            }
+                        </div>
+                        <textarea id="pythonEditor" style="width: 100%; height: 400px; font-family: 'Courier New', monospace; font-size: 14px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; resize: vertical;">${pythonCode}</textarea>
+                        <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                            💡 提示：可以直接编辑Python代码，确保语法正确后保存或下载
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 移除已存在的编辑器
+            const existingModal = document.getElementById('pythonEditorModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            document.body.insertAdjacentHTML('beforeend', editorHTML);
+        }
+
+        function closePythonEditor() {
+            const modal = document.getElementById('pythonEditorModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        async function regeneratePython() {
+            if (!confirm('确定要重新生成Python脚本吗？当前编辑的内容将丢失。')) {
+                return;
+            }
+            
+            await generatePythonScript();
+        }
+
+        function savePython() {
+            const editor = document.getElementById('pythonEditor');
+            if (editor) {
+                currentPythonCode = editor.value;
+                showSuccess('✅ Python代码已保存到内存');
+            }
+        }
+
+        async function downloadPython() {
+            const editor = document.getElementById('pythonEditor');
+            if (!editor) {
+                showError('找不到Python编辑器');
+                return;
+            }
+            
+            const pythonCode = editor.value;
+            
+            try {
+                const response = await fetch('/api/download-python', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        python_code: pythonCode
+                    })
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `test_script_${currentInterfaceId}_${new Date().getTime()}.py`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
+                    
+                    showSuccess('✅ Python文件下载成功');
+                } else {
+                    const errorData = await response.json();
+                    showError('下载Python文件失败: ' + (errorData.error || '服务器错误'));
+                }
+            } catch (error) {
+                showError('下载Python文件失败: ' + error.message);
+            }
+        }
+
+        function showLoading(message) {
+            const alert = document.getElementById('alert');
+            alert.innerHTML = `<div class="alert alert-success">${message}</div>`;
+        }
+        
+        function hideLoading() {
+            const alert = document.getElementById('alert');
+            alert.innerHTML = '';
+        }
+        
+        function closeExecutionResult() {
+            const executionResult = document.getElementById('executionResult');
+            if (executionResult) {
+                executionResult.style.display = 'none';
+            }
+        }
+
+        function convertToYAML(testCases) {
+            if (testCases.length === 0) return '';
+            
+            const yamlLines = [
+                '# 测试用例 YAML 格式文件',
+                '# 生成时间: ' + new Date().toLocaleString(),
+                '# 测试用例数量: ' + testCases.length,
+                'test_cases:'
+            ];
+            
+            testCases.forEach((testCase, index) => {
+                yamlLines.push(`  - test_case_id: "${testCase.test_case_id || `TC${String(index + 1).padStart(3, '0')}`}"`);
+                yamlLines.push(`    test_case_name: "${testCase.test_case_name || `测试用例 ${index + 1}`}"`);
+                yamlLines.push(`    api_name: "${testCase.api_name || ''}"`);
+                yamlLines.push(`    method: "${testCase.method || 'GET'}"`);
+                yamlLines.push(`    url: "${testCase.url || ''}"`);
+                
+                // 处理 headers 字段，使用 JSON 对象格式
+                if (testCase.headers && typeof testCase.headers === 'string' && testCase.headers.trim()) {
+                    try {
+                        const headersObj = JSON.parse(testCase.headers);
+                        yamlLines.push(`    headers:`);
+                        Object.keys(headersObj).forEach(key => {
+                            yamlLines.push(`      ${key}: "${headersObj[key]}"`);
+                        });
+                    } catch (e) {
+                        yamlLines.push(`    headers: "${testCase.headers}"`);
+                    }
+                } else if (testCase.headers && typeof testCase.headers === 'object') {
+                    yamlLines.push(`    headers:`);
+                    Object.keys(testCase.headers).forEach(key => {
+                        yamlLines.push(`      ${key}: "${testCase.headers[key]}"`);
+                    });
+                } else {
+                    yamlLines.push(`    headers: {}`);
+                }
+                
+                // 处理 request_data 字段，使用 JSON 对象格式
+                if (testCase.request_data && typeof testCase.request_data === 'string' && testCase.request_data.trim()) {
+                    try {
+                        const requestDataObj = JSON.parse(testCase.request_data);
+                        yamlLines.push(`    request_data:`);
+                        Object.keys(requestDataObj).forEach(key => {
+                            const value = requestDataObj[key];
+                            if (typeof value === 'object') {
+                                yamlLines.push(`      ${key}: ${JSON.stringify(value)}`);
+                            } else {
+                                yamlLines.push(`      ${key}: "${value}"`);
+                            }
+                        });
+                    } catch (e) {
+                        yamlLines.push(`    request_data: "${testCase.request_data}"`);
+                    }
+                } else if (testCase.request_data && typeof testCase.request_data === 'object') {
+                    yamlLines.push(`    request_data:`);
+                    Object.keys(testCase.request_data).forEach(key => {
+                        const value = testCase.request_data[key];
+                        if (typeof value === 'object') {
+                            yamlLines.push(`      ${key}: ${JSON.stringify(value)}`);
+                        } else {
+                            yamlLines.push(`      ${key}: "${value}"`);
+                        }
+                    });
+                } else {
+                    yamlLines.push(`    request_data: {}`);
+                }
+                
+                yamlLines.push(`    expected_status_code: ${testCase.expected_status_code || 200}`);
+                
+                // 处理 expected_response 字段，使用 JSON 对象格式
+                if (testCase.expected_response && typeof testCase.expected_response === 'string' && testCase.expected_response.trim()) {
+                    try {
+                        const responseObj = JSON.parse(testCase.expected_response);
+                        yamlLines.push(`    expected_response:`);
+                        Object.keys(responseObj).forEach(key => {
+                            const value = responseObj[key];
+                            if (typeof value === 'object') {
+                                yamlLines.push(`      ${key}: ${JSON.stringify(value)}`);
+                            } else {
+                                yamlLines.push(`      ${key}: "${value}"`);
+                            }
+                        });
+                    } catch (e) {
+                        yamlLines.push(`    expected_response: "${testCase.expected_response}"`);
+                    }
+                } else if (testCase.expected_response && typeof testCase.expected_response === 'object') {
+                    yamlLines.push(`    expected_response:`);
+                    Object.keys(testCase.expected_response).forEach(key => {
+                        const value = testCase.expected_response[key];
+                        if (typeof value === 'object') {
+                            yamlLines.push(`      ${key}: ${JSON.stringify(value)}`);
+                        } else {
+                            yamlLines.push(`      ${key}: "${value}"`);
+                        }
+                    });
+                } else {
+                    yamlLines.push(`    expected_response: {}`);
+                }
+                
+                yamlLines.push(`    test_type: "${testCase.test_type || 'positive'}"`);
+                yamlLines.push(`    priority: "${testCase.priority || 'medium'}"`);
+                yamlLines.push(`    description: "${testCase.description || ''}"`);
+                yamlLines.push(`    preconditions: "${testCase.preconditions || ''}"`);
+                yamlLines.push(`    postconditions: "${testCase.postconditions || ''}"`);
+                
+                // 处理 tags 字段，使用数组格式
+                if (testCase.tags && typeof testCase.tags === 'string' && testCase.tags.trim()) {
+                    try {
+                        const tagsArray = JSON.parse(testCase.tags);
+                        if (Array.isArray(tagsArray)) {
+                            yamlLines.push(`    tags:`);
+                            tagsArray.forEach(tag => {
+                                yamlLines.push(`      - "${tag}"`);
+                            });
+                        } else {
+                            yamlLines.push(`    tags: ["${testCase.tags}"]`);
+                        }
+                    } catch (e) {
+                        yamlLines.push(`    tags: ["${testCase.tags}"]`);
+                    }
+                } else if (testCase.tags && Array.isArray(testCase.tags)) {
+                    yamlLines.push(`    tags:`);
+                    testCase.tags.forEach(tag => {
+                        yamlLines.push(`      - "${tag}"`);
+                    });
+                } else {
+                    yamlLines.push(`    tags: []`);
+                }
+                
+                yamlLines.push(''); // 空行分隔测试用例
+            });
+            
+            return yamlLines.join('\n');
+        }
+
+
+
+        function filterTestCases() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = currentTestCases.filter(testCase => 
+                Object.values(testCase).some(value => 
+                    String(value).toLowerCase().includes(searchTerm)
+                )
+            );
+            
+            // 临时显示过滤结果
+            const tempTestCases = currentTestCases;
+            currentTestCases = filtered;
+            displayTestCases();
+            currentTestCases = tempTestCases;
+        }
+
+        function showSuccess(message) {
+            console.log('显示成功消息:', message);
+            const alert = document.getElementById('alert');
+            if (!alert) {
+                console.error('找不到alert元素');
+                return;
+            }
+            // 将换行符转换为<br>标签，保持格式
+            const formattedMessage = message.replace(/\n/g, '<br>');
+            alert.innerHTML = `<div class="alert alert-success" style="white-space: pre-wrap; text-align: left; line-height: 1.6;">${formattedMessage}</div>`;
+            // 滚动到提示区域
+            alert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            // 成功消息10秒后自动消失
+            setTimeout(() => alert.innerHTML = '', 10000);
+        }
+
+        function showError(message) {
+            console.log('显示错误消息:', message);
+            const alert = document.getElementById('alert');
+            if (!alert) {
+                console.error('找不到alert元素');
+                return;
+            }
+            // 将换行符转换为<br>标签，保持格式
+            const formattedMessage = message.replace(/\n/g, '<br>');
+            alert.innerHTML = `<div class="alert alert-error" style="white-space: pre-wrap; text-align: left; line-height: 1.6;">${formattedMessage}</div>`;
+            // 滚动到提示区域
+            alert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        function addExecutionStep(message, status = 'running') {
+            const stepList = document.getElementById('stepList');
+            const executionSteps = document.getElementById('executionSteps');
+            
+            if (stepList && executionSteps) {
+                executionSteps.style.display = 'block';
+                
+                const stepDiv = document.createElement('div');
+                stepDiv.style.cssText = 'display: flex; align-items: center; gap: 8px; font-size: 0.9em;';
+                
+                let icon = '';
+                let color = '';
+                if (status === 'running') {
+                    icon = '⏳';
+                    color = '#666';
+                } else if (status === 'success') {
+                    icon = '✅';
+                    color = '#28a745';
+                } else if (status === 'error') {
+                    icon = '❌';
+                    color = '#dc3545';
+                }
+                
+                stepDiv.innerHTML = `<span style="font-size: 1.2em;">${icon}</span><span style="color: ${color};">${message}</span>`;
+                stepList.appendChild(stepDiv);
+            }
+        }
+        
+        function clearExecutionSteps() {
+            const stepList = document.getElementById('stepList');
+            if (stepList) {
+                stepList.innerHTML = '';
+            }
+        }
+        
+        async function pollJenkinsBuildStatus(jobName, buildNumber) {
+            let pollCount = 0;
+            const maxPolls = 120; // 最多轮询10分钟（每5秒一次）
+            
+            const pollInterval = setInterval(async () => {
+                pollCount++;
+                
+                try {
+                    const response = await fetch(`/api/get-build-status?job_name=${jobName}&build_number=${buildNumber}`);
+                    const result = await response.json();
+                    
+                    if (result.success && result.build_info) {
+                        const status = result.build_info.status;
+                        const building = result.build_info.building;
+                        
+                        if (!building && status !== 'BUILDING') {
+                            clearInterval(pollInterval);
+                            
+                            if (status === 'SUCCESS') {
+                                addExecutionStep('Jenkins构建完成，测试执行成功', 'success');
+                                enableViewReportButton();
+                            } else if (status === 'FAILURE') {
+                                addExecutionStep('Jenkins构建失败，请查看日志', 'error');
+                                enableViewReportButton(); // 即使失败也允许查看报告
+                            } else {
+                                addExecutionStep(`Jenkins构建结束，状态: ${status}`, 'success');
+                                enableViewReportButton();
+                            }
+                        }
+                    }
+                    
+                    if (pollCount >= maxPolls) {
+                        clearInterval(pollInterval);
+                        addExecutionStep('构建状态查询超时，请手动刷新', 'error');
+                        enableViewReportButton(); // 超时也允许查看报告
+                    }
+                } catch (error) {
+                    console.error('查询构建状态失败:', error);
+                }
+            }, 5000); // 每5秒查询一次
+        }
+        
+        function enableViewReportButton() {
+            const viewReportBtn = document.getElementById('viewReportBtn');
+            if (viewReportBtn) {
+                viewReportBtn.disabled = false;
+                viewReportBtn.style.background = 'linear-gradient(135deg, #17a2b8 0%, #138496 100%)';
+                viewReportBtn.style.cursor = 'pointer';
+            }
+        }
+        
+        function disableViewReportButton() {
+            const viewReportBtn = document.getElementById('viewReportBtn');
+            if (viewReportBtn) {
+                viewReportBtn.disabled = true;
+                viewReportBtn.style.background = '#ccc';
+                viewReportBtn.style.cursor = 'not-allowed';
+            }
+        }
+
+        async function archiveTestCase() {
+            if (!currentCollectionId || !currentInterfaceId) {
+                showError('缺少集合ID或接口ID');
+                return;
+            }
+            
+            if (currentTestCases.length === 0) {
+                showError('没有测试用例可归档');
+                return;
+            }
+            
+            const confirmMessage = `
+📦 确定要将当前用例归档到正式环境吗？
+
+📊 归档信息：
+   • 用例数量：${currentTestCases.length} 个
+   • 集合ID：${currentCollectionId}
+   • 接口ID：${currentInterfaceId}
+
+📍 目标SVN路径：
+   svn://172.16.9.XXX/repo/jiaoben/jk/data_yaml
+
+⚠️ 注意：归档后，该用例将用于正式测试执行！
+            `.trim();
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            try {
+                showLoading('正在归档用例...');
+                
+                // 将测试用例转换为YAML格式（与执行用例相同的方式）
+                const yamlContent = convertToYAML(currentTestCases);
+                
+                if (!yamlContent) {
+                    showError('无法生成YAML内容，测试用例为空');
+                    return;
+                }
+                
+                const response = await fetch('/api/archive-testcase', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        collection_id: currentCollectionId,
+                        interface_id: currentInterfaceId,
+                        yaml_content: yamlContent,
+                        testcases: currentTestCases
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // 构建详细的成功信息
+                    const successMessage = `
+🎉 用例归档成功！
+
+📦 归档信息：
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📄 文件名称：${data.filename}
+🔖 SVN版本：r${data.revision}
+📝 用例数量：${data.testcase_count || currentTestCases.length} 个
+📅 归档时间：${new Date().toLocaleString('zh-CN')}
+
+📍 SVN路径：
+   svn://172.16.9.XXX/repo/jiaoben/jk/data_yaml
+
+✅ 该用例已提交到正式环境，可用于正式测试执行。
+                    `.trim();
+                    
+                    showSuccess(successMessage);
+                    
+                    // 可选：3秒后自动关闭提示
+                    // setTimeout(() => {
+                    //     const alertDiv = document.getElementById('alert');
+                    //     if (alertDiv) alertDiv.innerHTML = '';
+                    // }, 5000);
+                } else {
+                    showError('❌ 归档失败\n\n错误信息：' + data.error);
+                }
+            } catch (error) {
+                showError('❌ 归档失败\n\n错误信息：' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function executeProductionTestCases() {
+            if (!currentCollectionId) {
+                showError('缺少集合ID');
+                return;
+            }
+
+            const confirmMessage = `
+🚀 确定要执行正式环境的所有用例吗？
+
+📊 执行信息：
+   • 执行范围：正式SVN目录下的所有用例
+   • SVN路径：svn://172.16.9.XXX/repo/jiaoben/jk/data_yaml
+   • Jenkins Job：AI-jk（正式环境）
+
+⚠️ 注意：这将触发正式环境的完整测试！
+            `.trim();
+
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+
+            try {
+                showLoading('正在触发正式用例执行...');
+
+                const response = await fetch(`/api/execute-all-testcases/${currentCollectionId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const successMessage = `
+🎉 正式用例执行已触发！
+
+📊 执行信息：
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🏗️ Jenkins Job：${data.job_name}
+🔢 构建号：#${data.build_number}
+📅 触发时间：${new Date().toLocaleString('zh-CN')}
+
+📍 Jenkins地址：
+   http://172.16.9.XXX:8082/view/AI-jiekou/job/AI-jk/
+
+✅ 测试正在执行中，请稍后查看报告。
+                    `.trim();
+
+                    showSuccess(successMessage);
+
+                    // 如果有报告URL，可以启用查看报告按钮
+                    if (data.report_url) {
+                        // 可以在这里添加逻辑
+                    }
+                } else {
+                    showError('❌ 触发正式用例执行失败\n\n错误信息：' + data.error);
+                }
+            } catch (error) {
+                showError('❌ 触发正式用例执行失败\n\n错误信息：' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function viewProductionReport() {
+            // 打开总测试报告页面
+            const reportUrl = 'http://172.16.9.XXX:8082/view/AI-jiekou/job/AI-jk/lastSuccessfulBuild/allure/';
+            
+            const confirmMessage = `
+📈 即将打开总测试报告
+
+📍 报告地址：
+   http://172.16.9.XXX:8082/view/AI-jiekou/job/AI-jk/
+
+💡 提示：
+   • 将打开最新成功构建的Allure报告
+   • 如需查看特定构建，请访问Jenkins页面选择
+
+是否继续？
+            `.trim();
+
+            if (confirm(confirmMessage)) {
+                window.open(reportUrl, '_blank');
+            }
+        }
+
+        function goBack() {
+            // 返回到对应项目的接口列表页
+            if (currentCollectionId) {
+                // 直接跳转到首页，并通过URL参数触发显示接口列表
+                window.location.href = `/?show_collection=${currentCollectionId}`;
+            } else if (window.history.length > 1) {
+                // 如果没有collection_id，使用浏览器历史记录返回
+                window.history.back();
+            } else {
+                // 如果没有历史记录，则返回到首页
+                window.location.href = '/';
+            }
+        }
+    </script>
+    <script src="{{ url_for('static', filename='theme-switcher.js') }}"></script>
+</body>
+</html>

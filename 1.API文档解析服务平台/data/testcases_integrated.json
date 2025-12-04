@@ -1,0 +1,185 @@
+{
+  "_metadata": {
+    "testcase_count": 5,
+    "generated_at": "2025-11-27T21:16:29.663803",
+    "source": "integrated_parser_test"
+  },
+  "testcases": [
+    {
+      "test_case_id": "TC001",
+      "test_case_name": "正常查询用户信息",
+      "api_name": "获取用户文档列表",
+      "method": "POST",
+      "url": "/user/sysUserDict/getDocList",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer {{token}}",
+        "tenantCode": "tenant001"
+      },
+      "request_data": {
+        "dto": {
+          "userCode": "DR001",
+          "userName": "张三",
+          "validFlag": "1"
+        }
+      },
+      "expected_status_code": 200,
+      "expected_response": {
+        "code": "1",
+        "data": {
+          "total": 1,
+          "list": [
+            {
+              "id": "001",
+              "userCode": "DR001",
+              "userName": "张三",
+              "validFlag": "1"
+            }
+          ]
+        }
+      },
+      "test_type": "positive",
+      "priority": "high",
+      "description": "验证有效认证下正常查询用户信息",
+      "preconditions": "已通过登录认证并获取有效token",
+      "postconditions": "返回包含查询结果的data对象",
+      "tags": [
+        "sysUserDict",
+        "positive",
+        "auth"
+      ]
+    },
+    {
+      "test_case_id": "TC002",
+      "test_case_name": "未认证访问接口",
+      "api_name": "获取用户文档列表",
+      "method": "POST",
+      "url": "/user/sysUserDict/getDocList",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "request_data": {
+        "dto": {
+          "userCode": "DR001"
+        }
+      },
+      "expected_status_code": 401,
+      "expected_response": {
+        "code": "401",
+        "message": "未认证请求"
+      },
+      "test_type": "negative",
+      "priority": "medium",
+      "description": "验证未认证用户无法访问接口",
+      "preconditions": "未进行任何认证操作",
+      "postconditions": "返回401未授权状态码",
+      "tags": [
+        "sysUserDict",
+        "negative",
+        "auth"
+      ]
+    },
+    {
+      "test_case_id": "TC003",
+      "test_case_name": "分页参数测试",
+      "api_name": "获取用户文档列表",
+      "method": "POST",
+      "url": "/user/sysUserDict/getDocList",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer {{token}}",
+        "tenantCode": "tenant001"
+      },
+      "request_data": {
+        "dto": {
+          "pageNum": "1",
+          "pageSize": "10"
+        }
+      },
+      "expected_status_code": 200,
+      "expected_response": {
+        "code": "1",
+        "data": {
+          "pageNum": 1,
+          "pageSize": 10,
+          "total": 50
+        }
+      },
+      "test_type": "boundary",
+      "priority": "low",
+      "description": "验证分页参数取值范围",
+      "preconditions": "已通过认证",
+      "postconditions": "返回包含分页信息的data对象",
+      "tags": [
+        "sysUserDict",
+        "boundary",
+        "page"
+      ]
+    },
+    {
+      "test_case_id": "TC004",
+      "test_case_name": "日期格式边界测试",
+      "api_name": "获取用户文档列表",
+      "method": "POST",
+      "url": "/user/sysUserDict/getDocList",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer {{token}}",
+        "tenantCode": "tenant001"
+      },
+      "request_data": {
+        "dto": {
+          "startTime": "2024-01-01T00:00:00Z",
+          "endTime": "2024-01-31T23:59:59Z"
+        }
+      },
+      "expected_status_code": 200,
+      "expected_response": {
+        "code": "1",
+        "data": {
+          "total": 100
+        }
+      },
+      "test_type": "boundary",
+      "priority": "medium",
+      "description": "验证日期参数的边界值处理",
+      "preconditions": "已通过认证",
+      "postconditions": "返回符合日期范围的数据",
+      "tags": [
+        "sysUserDict",
+        "boundary",
+        "date"
+      ]
+    },
+    {
+      "test_case_id": "TC005",
+      "test_case_name": "必填参数缺失测试",
+      "api_name": "获取用户文档列表",
+      "method": "POST",
+      "url": "/user/sysUserDict/getDocList",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer {{token}}",
+        "tenantCode": "tenant001"
+      },
+      "request_data": {
+        "dto": {}
+      },
+      "expected_status_code": 400,
+      "expected_response": {
+        "code": "400",
+        "message": "请求参数缺失"
+      },
+      "test_type": "negative",
+      "priority": "high",
+      "description": "验证必填参数缺失时的错误处理",
+      "preconditions": "已通过认证",
+      "postconditions": "返回400错误状态码",
+      "tags": [
+        "sysUserDict",
+        "negative",
+        "valid"
+      ]
+    }
+  ]
+}

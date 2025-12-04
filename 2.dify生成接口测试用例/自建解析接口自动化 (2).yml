@@ -1,0 +1,265 @@
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: advanced-chat
+  name: 自建解析接口自动化
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/zhipuai:0.0.19@6e2b02c20363bc5a04a3619130cdae281a8e902c468bdb93484ddf5cb670b256
+    version: null
+kind: app
+version: 0.5.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        sourceType: llm
+        targetType: answer
+      id: llm-answer
+      source: llm
+      sourceHandle: source
+      target: answer
+      targetHandle: target
+      type: custom
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: http-request
+      id: 1764060398611-source-1764060518606-target
+      source: '1764060398611'
+      sourceHandle: source
+      target: '1764060518606'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: http-request
+        targetType: llm
+      id: 1764060518606-source-llm-target
+      source: '1764060518606'
+      sourceHandle: source
+      target: llm
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: 用户输入
+        type: start
+        variables:
+        - default: ''
+          hint: ''
+          label: jihe
+          max_length: 48
+          options: []
+          placeholder: ''
+          required: true
+          type: text-input
+          variable: jihe
+        - default: ''
+          hint: ''
+          label: kid
+          max_length: 48
+          options: []
+          placeholder: ''
+          required: true
+          type: text-input
+          variable: kid
+      height: 135
+      id: '1764060398611'
+      position:
+        x: 0
+        y: 15
+      positionAbsolute:
+        x: 0
+        y: 15
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        memory:
+          query_prompt_template: "{{#sys.query#}}\n{{#sys.files#}}\n\n# 接口信息\n{{#1764060518606.body#}}\n\
+            \n1. **认证需求分析**：\n   - 检查接口路径和业务场景，判断是否需要登录认证\n   - 如果接口涉及用户数据操作，默认需要登录认证，测试用例字段前置条件，填需要认证\n\
+            \n2. **生成测试用例时包含认证检查**：\n   - 如果判断需要认证：生成\"未认证访问\"的异常测试用例\n   - 如果无法确定：在测试用例中前置条件填写【需确认】标记\n\
+            \n# 任务\n请为该接口生成接口测试用例。\n\n# 要求\n请根据接口信息生成结构化的接口自动化测试用例，以 JSON 格式输出。\n\
+            URL：无需显示IP和端口\n测试用例输出和结束，做个文本标识，开头标识：表格测试用例输出开始，结束标识：表格测试用例输出结束。\n\n#\
+            \ 输出格式要求\n```json\n{\n  \"test_cases\": [\n    {\n      \"test_case_id\"\
+            : \"TC001\",\n      \"test_case_name\": \"用户登录_正常流程\",\n      \"api_name\"\
+            : \"这是接口名称不是接口路径\",\n      \"method\": \"POST\",\n      \"url\": \"/user/getUserApplication\"\
+            ,\n      \"headers\": {\n        \"Content-Type\": \"application/json\"\
+            \n      },\n      \"request_data\": {\n        \"username\": \"admin\"\
+            ,\n        \"password\": \"admin123\"\n      },\n      \"expected_status_code\"\
+            : 200,\n      \"expected_response\": {\n        \"code\": 200,\n     \
+            \   \"msg\": \"操作成功\",\n        \"data\": {\n          \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\"\
+            \n        }\n      },\n      \"test_type\": \"positive\",\n      \"priority\"\
+            : \"high\",\n      \"description\": \"验证用户正常登录功能\",\n      \"preconditions\"\
+            : \"用户账号存在且状态正常\",\n      \"postconditions\": \"返回有效token，用户登录状态建立\",\n\
+            \      \"tags\": [\"login\", \"auth\", \"smoke\"]\n    }\n  ],\n  \"metadata\"\
+            : {\n    \"total_cases\": 1,\n    \"interface_name\": \"用户登录接口\",\n  \
+            \  \"generated_at\": \"2024-01-15T10:30:00Z\",\n    \"coverage_summary\"\
+            : {\n      \"positive_cases\": 1,\n      \"negative_cases\": 0,\n    \
+            \  \"boundary_cases\": 0\n    }\n  }\n}\n\n\n\n"
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 10
+        model:
+          completion_params:
+            max_tokens: 30701
+            temperature: 0.2
+            top_p: 0.7
+          mode: chat
+          name: glm-z1-flash
+          provider: langgenius/zhipuai/zhipuai
+        prompt_template:
+        - id: 0aece73e-318d-482f-861c-c8a3d5c43849
+          role: system
+          text: '# 角色
+
+            你是一名资深测试开发工程师，擅长根据接口信息编写高质量的接口自动化测试用例。
+
+
+            '
+        retry_config:
+          max_retries: 3
+          retry_enabled: true
+          retry_interval: 1000
+        selected: true
+        structured_output_enabled: false
+        title: LLM
+        type: llm
+        vision:
+          enabled: false
+      height: 118
+      id: llm
+      position:
+        x: 684
+        y: 8
+      positionAbsolute:
+        x: 684
+        y: 8
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        answer: '{{#llm.text#}}'
+        selected: false
+        title: 直接回复
+        type: answer
+        variables: []
+      height: 103
+      id: answer
+      position:
+        x: 1026
+        y: 0
+      positionAbsolute:
+        x: 1026
+        y: 0
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data: []
+          type: none
+        headers: ''
+        method: get
+        params: ''
+        retry_config:
+          max_retries: 3
+          retry_enabled: true
+          retry_interval: 100
+        selected: false
+        ssl_verify: true
+        timeout:
+          max_connect_timeout: 0
+          max_read_timeout: 0
+          max_write_timeout: 0
+        title: 接口信息
+        type: http-request
+        url: http://172.16.6.28:5000/api/interface/{{#1764060398611.jihe#}}/{{#1764060398611.kid#}}
+        variables: []
+      height: 160
+      id: '1764060518606'
+      position:
+        x: 342
+        y: 11
+      positionAbsolute:
+        x: 342
+        y: 11
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    viewport:
+      x: 101.37404550624649
+      y: 220.04019419569892
+      zoom: 0.870550563296124
+  rag_pipeline_variables: []

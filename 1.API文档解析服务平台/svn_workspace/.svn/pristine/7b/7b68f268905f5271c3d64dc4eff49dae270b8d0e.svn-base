@@ -1,0 +1,11 @@
+# 测试用例
+test_cases:
+  - test_case_id: "TEST_001"
+    test_case_name: "SVN连接测试用例"
+    api_name: "测试接口"
+    method: "GET"
+    url: "/api/test"
+    headers: {}
+    request_data: {}
+    expected_status_code: 200
+    expected_response: {}

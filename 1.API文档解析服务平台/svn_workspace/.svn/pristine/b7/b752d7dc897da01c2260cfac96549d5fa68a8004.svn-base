@@ -1,0 +1,74 @@
+# 测试用例 YAML 格式文件
+# 生成时间: 2025/11/27 23:00:08
+# 测试用例数量: 3
+test_cases:
+  - test_case_id: "TC001"
+    test_case_name: "正常查询角色报表树"
+    api_name: "getRoleReportTree"
+    method: "POST"
+    url: "/user/sysRoleReportAssign/getRoleReportTree"
+    headers:
+      Content-Type: "application/json"
+      Authorization: "Bearer token"
+    request_data:
+      sysRoleReportAssignDTO: {"reportCode":"RPT001","roleCode":"ROLE001","startTime":"2023-01-01T00:00:00","endTime":"2023-12-31T23:59:59"}
+    expected_status_code: 200
+    expected_response:
+      code: "1"
+      data: {"treeList":[{"id":"TR01","name":"报表1","checked":true}]}
+    test_type: "positive"
+    priority: "high"
+    description: "验证正常查询角色报表树功能"
+    preconditions: "用户已登录且拥有角色报表管理权限"
+    postconditions: "返回包含有效树形结构的响应数据"
+    tags:
+      - " Positive"
+      - "角色报表"
+      - "核心功能"
+
+  - test_case_id: "TC002"
+    test_case_name: "未认证访问接口"
+    api_name: "getRoleReportTree"
+    method: "POST"
+    url: "/user/sysRoleReportAssign/getRoleReportTree"
+    headers:
+      Content-Type: "application/json"
+    request_data:
+      sysRoleReportAssignDTO: {"reportCode":"RPT001"}
+    expected_status_code: 401
+    expected_response:
+      code: "0"
+      message: "未认证请求"
+    test_type: "negative"
+    priority: "medium"
+    description: "验证未认证访问接口的权限控制"
+    preconditions: "未进行任何身份认证"
+    postconditions: "返回401未授权响应"
+    tags:
+      - "Negative"
+      - "权限控制"
+      - "安全"
+
+  - test_case_id: "TC003"
+    test_case_name: "分页参数异常"
+    api_name: "getRoleReportTree"
+    method: "POST"
+    url: "/user/sysRoleReportAssign/getRoleReportTree"
+    headers:
+      Content-Type: "application/json"
+      Authorization: "Bearer token"
+    request_data:
+      sysRoleReportAssignDTO: {"pageNum":"abc","pageSize":100}
+    expected_status_code: 400
+    expected_response:
+      code: "0"
+      message: "分页参数格式错误"
+    test_type: "boundary"
+    priority: "low"
+    description: "验证分页参数的边界值校验"
+    preconditions: "已进行认证"
+    postconditions: "返回400错误响应"
+    tags:
+      - "Boundary"
+      - "参数校验"
+      - "异常处理"

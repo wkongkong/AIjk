@@ -1,0 +1,955 @@
+{
+  "_metadata": {
+    "last_updated": "2025-12-04T14:07:51.051829",
+    "collection_count": 1
+  },
+  "collections": {
+    "1abdcf89-dd42-48e1-bef5-b8d97d883ce9": {
+      "version": "2.0",
+      "title": "天空空系统接口文档",
+      "description": "天空空系统接口文档",
+      "base_url": "http://172.16.9.XXX:18090",
+      "interfaces": [
+        {
+          "id": "100000",
+          "path": "/user/sysRoleReportAssign/getRoleReportTree",
+          "method": "POST",
+          "summary": "查询角色报表分发树列表及其勾选",
+          "description": "**请求示例**:",
+          "tags": [
+            "角色报表分发服务"
+          ],
+          "operation_id": "",
+          "parameters": [
+            {
+              "name": "--------",
+              "in": "-----",
+              "required": false,
+              "type": "--------",
+              "description": "--------",
+              "schema_ref": "------",
+              "is_nested": false,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "sysRoleReportAssignDTO",
+              "in": "body",
+              "required": true,
+              "type": "角色报表分发",
+              "description": "sysRoleReportAssignDTO",
+              "schema_ref": "角色报表分发",
+              "is_nested": false,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "createBy",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "创建人",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "createTime",
+              "in": "",
+              "required": false,
+              "type": "string(date-time)",
+              "description": "创建时间",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "endTime",
+              "in": "",
+              "required": false,
+              "type": "string(date-time)",
+              "description": "查询时间结束",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "id",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "主键",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "pageNum",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "分页参数-当前页数",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "pageSize",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "分页参数-单页显示数",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "params",
+              "in": "",
+              "required": false,
+              "type": "object",
+              "description": "请求参数",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "remark",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "备注",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "reportCode",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "报表编码",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "roleCode",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "角色编码",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "searchKey",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "用于模糊搜索拼音码五笔码",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "sortNo",
+              "in": "",
+              "required": false,
+              "type": "integer(int32)",
+              "description": "排序号",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "startTime",
+              "in": "",
+              "required": false,
+              "type": "string(date-time)",
+              "description": "查询时间开始",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "updateBy",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "修改人",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "updateTime",
+              "in": "",
+              "required": false,
+              "type": "string(date-time)",
+              "description": "修改时间",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "validFlag",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "有效标志",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            }
+          ],
+          "request_body": {
+            "required": true,
+            "description": "",
+            "content_types": [
+              "application/json"
+            ],
+            "example": "{\n  \"createBy\": \"\",\n  \"createTime\": \"\",\n  \"endTime\": \"\",\n  \"id\": \"\",\n  \"pageNum\": \"\",\n  \"pageSize\": \"\",\n  \"params\": {},\n  \"remark\": \"\",\n  \"reportCode\": \"\",\n  \"roleCode\": \"\",\n  \"searchKey\": \"\",\n  \"sortNo\": 0,\n  \"startTime\": \"\",\n  \"updateBy\": \"\",\n  \"updateTime\": \"\",\n  \"validFlag\": \"\"\n}"
+          },
+          "responses": {
+            "200": {
+              "description": "OK",
+              "schema_ref": "响应消息体"
+            },
+            "201": {
+              "description": "Created",
+              "schema_ref": null
+            },
+            "401": {
+              "description": "Unauthorized",
+              "schema_ref": null
+            },
+            "403": {
+              "description": "Forbidden",
+              "schema_ref": null
+            },
+            "404": {
+              "description": "Not Found",
+              "schema_ref": null
+            }
+          },
+          "response_parameters": [
+            {
+              "name": "--------",
+              "description": "--------",
+              "type": "-----",
+              "schema": "-----",
+              "is_nested": false
+            },
+            {
+              "name": "code",
+              "description": "状态码：成功标记=1，失败标记=0",
+              "type": "string",
+              "schema": null,
+              "is_nested": false
+            },
+            {
+              "name": "data",
+              "description": "数据",
+              "type": "object",
+              "schema": null,
+              "is_nested": false
+            },
+            {
+              "name": "extendInfo",
+              "description": "扩展信息",
+              "type": "string",
+              "schema": null,
+              "is_nested": false
+            },
+            {
+              "name": "message",
+              "description": "返回信息",
+              "type": "string",
+              "schema": null,
+              "is_nested": false
+            },
+            {
+              "name": "pageNum",
+              "description": "页数",
+              "type": "integer(int32)",
+              "schema": "integer(int32)",
+              "is_nested": false
+            },
+            {
+              "name": "pageSize",
+              "description": "页数大小",
+              "type": "integer(int32)",
+              "schema": "integer(int32)",
+              "is_nested": false
+            },
+            {
+              "name": "timestamp",
+              "description": "返回时间",
+              "type": "integer(int64)",
+              "schema": "integer(int64)",
+              "is_nested": false
+            },
+            {
+              "name": "total",
+              "description": "总条数",
+              "type": "integer(int64)",
+              "schema": "integer(int64)",
+              "is_nested": false
+            }
+          ],
+          "response_example": "{\n\t\"code\": \"\",\n\t\"data\": {},\n\t\"extendInfo\": \"\",\n\t\"message\": \"\",\n\t\"pageNum\": 0,\n\t\"pageSize\": 0,\n\t\"timestamp\": 0,\n\t\"total\": 0\n}",
+          "deprecated": false,
+          "consumes": [
+            "application/json"
+          ],
+          "produces": [
+            "*/*"
+          ]
+        },
+        {
+          "id": "100001",
+          "path": "/user/sysMenuDict/deleteInfo",
+          "method": "POST",
+          "summary": "删除系统菜单字典信息",
+          "description": "**请求示例**:",
+          "tags": [
+            "系统菜单字典服务"
+          ],
+          "operation_id": "",
+          "parameters": [
+            {
+              "name": "--------",
+              "in": "-----",
+              "required": false,
+              "type": "--------",
+              "description": "--------",
+              "schema_ref": "------",
+              "is_nested": false,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "parms",
+              "in": "body",
+              "required": true,
+              "type": "应用菜单",
+              "description": "parms",
+              "schema_ref": "应用菜单",
+              "is_nested": false,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "accessLevel",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "访问等级",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "appCode",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "应用编码",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "appName",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "应用名称",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "appSortNo",
+              "in": "",
+              "required": false,
+              "type": "integer(int32)",
+              "description": "",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "cacheFlag",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "是否缓存(sys_yesno_flag)",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "checked",
+              "in": "",
+              "required": false,
+              "type": "boolean",
+              "description": "是否选中",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "children",
+              "in": "",
+              "required": false,
+              "type": "array<应用菜单>",
+              "description": "",
+              "schema_ref": "应用菜单",
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "collected",
+              "in": "",
+              "required": false,
+              "type": "boolean",
+              "description": "是否收藏",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "createBy",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "创建人",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "createTime",
+              "in": "",
+              "required": false,
+              "type": "string(date-time)",
+              "description": "创建时间",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "customCode",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "自定义编码",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "doctorMiniAppMenuType",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "医务端菜单返回类型",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "endTime",
+              "in": "",
+              "required": false,
+              "type": "string(date-time)",
+              "description": "查询时间结束",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "extLink",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "外部链接",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "filterMenuCode",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "菜单树筛选菜单",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "id",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "主键",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "keyword",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "搜索关键词",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "menuCode",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "菜单编码",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "menuCodes",
+              "in": "",
+              "required": false,
+              "type": "array<string>",
+              "description": "菜单组-用于删除",
+              "schema_ref": "string",
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "menuDesc",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "菜单描述",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "menuIcon",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "菜单图标",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "menuName",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "菜单名称",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "menuParent",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "上级菜单",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "menuParm",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "菜单组件",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "menuPath",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "菜单路由",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "menuPerms",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "权限标识",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "menuTips",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "菜单提示",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "menuType",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "菜单类型(sys_menu_type)",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "pageNum",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "分页参数-当前页数",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "pageSize",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "分页参数-单页显示数",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "params",
+              "in": "",
+              "required": false,
+              "type": "object",
+              "description": "请求参数",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "remark",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "备注",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "routeName",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "searchKey",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "用于模糊搜索拼音码五笔码",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "sortNo",
+              "in": "",
+              "required": false,
+              "type": "integer(int32)",
+              "description": "排序号",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "spellCode",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "拼音首码",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "startTime",
+              "in": "",
+              "required": false,
+              "type": "string(date-time)",
+              "description": "查询时间开始",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "terminalCode",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "终端编码",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "terminalName",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "所属终端名称",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "updateBy",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "修改人",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "updateTime",
+              "in": "",
+              "required": false,
+              "type": "string(date-time)",
+              "description": "修改时间",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "validFlag",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "有效标志",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "visibleFlag",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "是否可见(sys_visible_flag)",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            },
+            {
+              "name": "wbCode",
+              "in": "",
+              "required": false,
+              "type": "string",
+              "description": "五笔首码",
+              "schema_ref": null,
+              "is_nested": true,
+              "example": null,
+              "default": null
+            }
+          ],
+          "request_body": {
+            "required": true,
+            "description": "",
+            "content_types": [
+              "application/json"
+            ],
+            "example": "{\n  \"accessLevel\": \"\",\n  \"appCode\": \"\",\n  \"appName\": \"\",\n  \"appSortNo\": 0,\n  \"cacheFlag\": \"\",\n  \"checked\": true,\n  \"children\": [\n    {\n      \"accessLevel\": \"\",\n      \"appCode\": \"\",\n      \"appName\": \"\",\n      \"appSortNo\": 0,\n      \"cacheFlag\": \"\",\n      \"checked\": true,\n      \"children\": [],\n      \"collected\": true,\n      \"createBy\": \"\",\n      \"createTime\": \"\",\n      \"customCode\": \"\",\n      \"doctorMiniAppMenuType\": \"\",\n      \"endTime\": \"\",\n      \"extLink\": \"\",\n      \"filterMenuCode\": \"\",\n      \"id\": \"\",\n      \"keyword\": \"\",\n      \"menuCode\": \"\",\n      \"menuCodes\": [],\n      \"menuDesc\": \"\",\n      \"menuIcon\": \"\",\n      \"menuName\": \"\",\n      \"menuParent\": \"\",\n      \"menuParm\": \"\",\n      \"menuPath\": \"\",\n      \"menuPerms\": \"\",\n      \"menuTips\": \"\",\n      \"menuType\": \"\",\n      \"pageNum\": \"\",\n      \"pageSize\": \"\",\n      \"params\": {},\n      \"remark\": \"\",\n      \"routeName\": \"\",\n      \"searchKey\": \"\",\n      \"sortNo\": 0,\n      \"spellCode\": \"\",\n      \"startTime\": \"\",\n      \"terminalCode\": \"\",\n      \"terminalName\": \"\",\n      \"updateBy\": \"\",\n      \"updateTime\": \"\",\n      \"validFlag\": \"\",\n      \"visibleFlag\": \"\",\n      \"wbCode\": \"\"\n    }\n  ],\n  \"collected\": true,\n  \"createBy\": \"\",\n  \"createTime\": \"\",\n  \"customCode\": \"\",\n  \"doctorMiniAppMenuType\": \"\",\n  \"endTime\": \"\",\n  \"extLink\": \"\",\n  \"filterMenuCode\": \"\",\n  \"id\": \"\",\n  \"keyword\": \"\",\n  \"menuCode\": \"\",\n  \"menuCodes\": [],\n  \"menuDesc\": \"\",\n  \"menuIcon\": \"\",\n  \"menuName\": \"\",\n  \"menuParent\": \"\",\n  \"menuParm\": \"\",\n  \"menuPath\": \"\",\n  \"menuPerms\": \"\",\n  \"menuTips\": \"\",\n  \"menuType\": \"\",\n  \"pageNum\": \"\",\n  \"pageSize\": \"\",\n  \"params\": {},\n  \"remark\": \"\",\n  \"routeName\": \"\",\n  \"searchKey\": \"\",\n  \"sortNo\": 0,\n  \"spellCode\": \"\",\n  \"startTime\": \"\",\n  \"terminalCode\": \"\",\n  \"terminalName\": \"\",\n  \"updateBy\": \"\",\n  \"updateTime\": \"\",\n  \"validFlag\": \"\",\n  \"visibleFlag\": \"\",\n  \"wbCode\": \"\"\n}"
+          },
+          "responses": {
+            "200": {
+              "description": "OK",
+              "schema_ref": "响应消息体"
+            },
+            "201": {
+              "description": "Created",
+              "schema_ref": null
+            },
+            "401": {
+              "description": "Unauthorized",
+              "schema_ref": null
+            },
+            "403": {
+              "description": "Forbidden",
+              "schema_ref": null
+            },
+            "404": {
+              "description": "Not Found",
+              "schema_ref": null
+            }
+          },
+          "response_parameters": [
+            {
+              "name": "--------",
+              "description": "--------",
+              "type": "-----",
+              "schema": "-----",
+              "is_nested": false
+            },
+            {
+              "name": "code",
+              "description": "状态码：成功标记=1，失败标记=0",
+              "type": "string",
+              "schema": null,
+              "is_nested": false
+            },
+            {
+              "name": "data",
+              "description": "数据",
+              "type": "object",
+              "schema": null,
+              "is_nested": false
+            },
+            {
+              "name": "extendInfo",
+              "description": "扩展信息",
+              "type": "string",
+              "schema": null,
+              "is_nested": false
+            },
+            {
+              "name": "message",
+              "description": "返回信息",
+              "type": "string",
+              "schema": null,
+              "is_nested": false
+            },
+            {
+              "name": "pageNum",
+              "description": "页数",
+              "type": "integer(int32)",
+              "schema": "integer(int32)",
+              "is_nested": false
+            },
+            {
+              "name": "pageSize",
+              "description": "页数大小",
+              "type": "integer(int32)",
+              "schema": "integer(int32)",
+              "is_nested": false
+            },
+            {
+              "name": "timestamp",
+              "description": "返回时间",
+              "type": "integer(int64)",
+              "schema": "integer(int64)",
+              "is_nested": false
+            },
+            {
+              "name": "total",
+              "description": "总条数",
+              "type": "integer(int64)",
+              "schema": "integer(int64)",
+              "is_nested": false
+            }
+          ],
+          "response_example": "{\n\t\"code\": \"\",\n\t\"data\": {},\n\t\"extendInfo\": \"\",\n\t\"message\": \"\",\n\t\"pageNum\": 0,\n\t\"pageSize\": 0,\n\t\"timestamp\": 0,\n\t\"total\": 0\n}",
+          "deprecated": false,
+          "consumes": [
+            "application/json"
+          ],
+          "produces": [
+            "*/*"
+          ]
+        }
+      ],
+      "format": "markdown",
+      "_created_at": "2025-12-04T14:07:51.051814",
+      "_id": "1abdcf89-dd42-48e1-bef5-b8d97d883ce9"
+    }
+  }
+}

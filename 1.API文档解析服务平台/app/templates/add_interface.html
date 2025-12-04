@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新增接口 - API 文档解析服务</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='themes.css') }}">
+    <style>
+        .add-interface-container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .page-header {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .page-header h1 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+
+        .page-header p {
+            margin: 0;
+            color: #666;
+        }
+
+        .form-card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin: 30px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .section-title:first-child {
+            margin-top: 0;
+        }
+
+        .required-mark {
+            color: #f56565;
+            margin-left: 4px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #eee;
+        }
+
+        .btn-large {
+            padding: 12px 32px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="add-interface-container">
+        <div class="page-header">
+            <h1>➕ 新增接口</h1>
+            <p>手动添加接口信息，系统将自动生成测试用例</p>
+        </div>
+
+        <div class="form-card">
+            <form id="addInterfaceForm" onsubmit="submitAddInterface(event)">
+                <!-- 基本信息 -->
+                <div class="section-title">📌 基本信息</div>
+                
+                <div class="form-group">
+                    <label>接口名称 <span class="required-mark">*</span></label>
+                    <input type="text" id="interfaceSummary" required placeholder="例如：获取用户信息">
+                </div>
+                
+                <div class="form-group">
+                    <label>请求方法 <span class="required-mark">*</span></label>
+                    <select id="interfaceMethod" required>
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="DELETE">DELETE</option>
+                        <option value="PATCH">PATCH</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>URL路径 <span class="required-mark">*</span></label>
+                    <input type="text" id="interfacePath" required placeholder="例如：/api/user/{id}">
+                </div>
+                
+                <div class="form-group">
+                    <label>接口描述</label>
+                    <textarea id="interfaceDescription" rows="3" placeholder="详细描述接口的功能和用途"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>标签（多个标签用逗号分隔）</label>
+                    <input type="text" id="interfaceTags" placeholder="例如：用户,查询">
+                </div>
+
+                <!-- 请求参数 -->
+                <div class="section-title">📥 请求参数</div>
+                
+                <div class="form-group">
+                    <label>请求参数（JSON格式）</label>
+                    <textarea id="interfaceParameters" rows="8" placeholder='例如：
+{
+  "id": {
+    "type": "string",
+    "required": true,
+    "description": "用户ID"
+  },
+  "name": {
+    "type": "string",
+    "required": false,
+    "description": "用户名称"
+  }
+}'></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>请求体（JSON格式）</label>
+                    <textarea id="interfaceRequestBody" rows="8" placeholder='例如：
+{
+  "name": "string",
+  "age": "integer",
+  "email": "string"
+}'></textarea>
+                </div>
+
+                <!-- 响应信息 -->
+                <div class="section-title">📤 响应信息</div>
+                
+                <div class="form-group">
+                    <label>响应示例（JSON格式）</label>
+                    <textarea id="interfaceResponses" rows="10" placeholder='例如：
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": "123",
+    "name": "张三",
+    "age": 25
+  }
+}'></textarea>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary btn-large" onclick="goBack()">取消</button>
+                    <button type="submit" class="btn btn-primary btn-large">保存并生成测试用例</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="loading" class="loading" style="display: none;">
+        <div class="loading-spinner"></div>
+        <p id="loadingText">处理中...</p>
+    </div>
+
+    <div id="alert"></div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const collectionId = urlParams.get('collection_id');
+
+        if (!collectionId) {
+            alert('缺少集合ID参数');
+            window.location.href = '/';
+        }
+
+        function showLoading(text) {
+            document.getElementById('loading').style.display = 'flex';
+            document.getElementById('loadingText').textContent = text || '处理中...';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            const alert = document.getElementById('alert');
+            const formattedMessage = message.replace(/\n/g, '<br>');
+            alert.innerHTML = `<div class="alert alert-success">${formattedMessage}</div>`;
+            alert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            setTimeout(() => alert.innerHTML = '', 10000);
+        }
+
+        function showError(message) {
+            const alert = document.getElementById('alert');
+            const formattedMessage = message.replace(/\n/g, '<br>');
+            alert.innerHTML = `<div class="alert alert-error">${formattedMessage}</div>`;
+            alert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function goBack() {
+            window.location.href = `/?show_collection=${collectionId}`;
+        }
+
+        async function submitAddInterface(event) {
+            event.preventDefault();
+
+            try {
+                showLoading('正在保存接口...');
+
+                // 收集表单数据
+                const summary = document.getElementById('interfaceSummary').value.trim();
+                const method = document.getElementById('interfaceMethod').value;
+                const path = document.getElementById('interfacePath').value.trim();
+                const description = document.getElementById('interfaceDescription').value.trim();
+                const tagsInput = document.getElementById('interfaceTags').value.trim();
+                const parametersInput = document.getElementById('interfaceParameters').value.trim();
+                const requestBodyInput = document.getElementById('interfaceRequestBody').value.trim();
+                const responsesInput = document.getElementById('interfaceResponses').value.trim();
+
+                // 解析标签
+                const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(t => t) : [];
+
+                // 解析JSON字段
+                let parameters = {};
+                let requestBody = {};
+                let responses = {};
+
+                if (parametersInput) {
+                    try {
+                        parameters = JSON.parse(parametersInput);
+                    } catch (e) {
+                        showError('❌ 请求参数JSON格式不正确\n\n' + e.message);
+                        hideLoading();
+                        return;
+                    }
+                }
+
+                if (requestBodyInput) {
+                    try {
+                        requestBody = JSON.parse(requestBodyInput);
+                    } catch (e) {
+                        showError('❌ 请求体JSON格式不正确\n\n' + e.message);
+                        hideLoading();
+                        return;
+                    }
+                }
+
+                if (responsesInput) {
+                    try {
+                        responses = JSON.parse(responsesInput);
+                    } catch (e) {
+                        showError('❌ 响应示例JSON格式不正确\n\n' + e.message);
+                        hideLoading();
+                        return;
+                    }
+                }
+
+                // 生成接口ID
+                const interfaceId = Date.now().toString();
+
+                // 构建接口对象
+                const newInterface = {
+                    id: interfaceId,
+                    method: method,
+                    path: path,
+                    summary: summary,
+                    description: description,
+                    tags: tags,
+                    parameters: parameters,
+                    requestBody: requestBody,
+                    responses: responses,
+                    deprecated: false
+                };
+
+                // 调用后端API保存接口
+                const response = await fetch(`/api/collection/${collectionId}/add-interface`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ interface: newInterface })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showSuccess('✅ 接口添加成功！');
+                    
+                    // 询问是否立即生成测试用例
+                    if (confirm('接口已添加成功！是否立即生成测试用例？')) {
+                        // 跳转到首页并触发生成测试用例
+                        window.location.href = `/?show_collection=${collectionId}&generate_interface=${interfaceId}`;
+                    } else {
+                        // 返回接口列表
+                        window.location.href = `/?show_collection=${collectionId}`;
+                    }
+                } else {
+                    showError('❌ 添加接口失败\n\n' + (data.error || '未知错误'));
+                }
+            } catch (error) {
+                console.error('添加接口失败:', error);
+                showError('❌ 添加接口失败\n\n' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+    </script>
+    <script src="{{ url_for('static', filename='theme-switcher.js') }}"></script>
+</body>
+</html>

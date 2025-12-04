@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI接口自动化测试平台</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='themes.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 AI接口自动化测试平台</h1>
+            <!-- 操作流程图 -->
+            <div class="workflow-diagram">
+                <div class="workflow-step">
+                    <div class="step-icon">📤</div>
+                    <div class="step-text">上传API文档</div>
+                </div>
+                <div class="workflow-arrow">→</div>
+                <div class="workflow-step">
+                    <div class="step-icon">🔍</div>
+                    <div class="step-text">解析API接口</div>
+                </div>
+                <div class="workflow-arrow">→</div>
+                <div class="workflow-step">
+                    <div class="step-icon">🤖</div>
+                    <div class="step-text">AI生成用例</div>
+                </div>
+                <div class="workflow-arrow">→</div>
+                <div class="workflow-step">
+                    <div class="step-icon">📝</div>
+                    <div class="step-text">用例审核</div>
+                </div>
+                <div class="workflow-arrow">→</div>
+                <div class="workflow-step">
+                    <div class="step-icon">▶️</div>
+                    <div class="step-text">执行用例</div>
+                </div>
+                <div class="workflow-arrow">→</div>
+                <div class="workflow-step">
+                    <div class="step-icon">📊</div>
+                    <div class="step-text">输出报告</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="alert"></div>
+
+        <!-- 首页：历史解析文件列表 -->
+        <div class="card" id="homeSection">
+            <div class="section-header">
+                <h2>📚 历史解析文件</h2>
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <div class="auto-generate-toggle" style="display: flex; align-items: center; gap: 8px; padding: 8px 15px; background: #f8f9fa; border-radius: 6px; border: 1px solid #dee2e6;">
+                        <span style="font-size: 0.9em; color: #666;">🤖 自动AI生成用例</span>
+                        <label class="switch">
+                            <input type="checkbox" id="autoGenerateSwitch" onchange="toggleAutoGenerate(this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <button class="btn btn-primary" onclick="showUploadSection()">
+                        ➕ 新增解析
+                    </button>
+                </div>
+            </div>
+            
+            <div id="collectionsListContainer">
+                <div id="collectionsList" class="collections-grid"></div>
+                <div id="emptyState" class="empty-state" style="display: none;">
+                    <div class="empty-icon">📭</div>
+                    <p>暂无解析记录</p>
+                    <p style="color: #999; font-size: 0.9em;">点击"新增解析"按钮上传API文档</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 上传解析页面 -->
+        <div class="card upload-section" id="uploadSection" style="display: none;">
+            <div class="section-header">
+                <h2>📤 上传 API 文档</h2>
+                <button class="btn" onclick="showHomeSection()">
+                    ← 返回首页
+                </button>
+            </div>
+            
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📄</div>
+                <p>拖拽文件到此处，或点击选择文件</p>
+                <p style="color: #999; font-size: 0.9em; margin-top: 10px;">
+                    支持 JSON、YAML、YML、MD、MARKDOWN 格式 (最大 16MB)
+                </p>
+                <input type="file" id="fileInput" class="file-input" accept=".json,.yaml,.yml,.md,.markdown">
+            </div>
+            <button class="btn btn-primary" id="uploadBtn" disabled>上传并解析</button>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>正在解析文档...</p>
+        </div>
+
+        <!-- 接口详情页面 -->
+        <div class="card result-section" id="resultSection" style="display: none;">
+            <div class="section-header">
+                <h2 id="collectionTitle">📋 接口列表</h2>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button class="btn" onclick="executeAllProductionTestCases()" 
+                            style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);">
+                        🚀 正式用例执行
+                    </button>
+                    <button class="btn" onclick="viewProductionReport()" 
+                            style="background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);">
+                        📈 总测试报告
+                    </button>
+                    <a href="/" class="btn" style="text-decoration: none; display: inline-block;">
+                        ← 返回首页
+                    </a>
+                </div>
+            </div>
+
+            <div class="collection-info" id="collectionInfo"></div>
+
+            <div class="search-box">
+                <input type="text" class="search-input" id="searchInput" 
+                       placeholder="🔍 搜索接口 (路径、名称、描述、标签、接口ID、模块名称) | 输入"生成失败"筛选失败接口">
+            </div>
+
+            <div class="interfaces-list" id="interfacesList"></div>
+        </div>
+    </div>
+
+    <!-- 版本标识 -->
+    <div class="version-badge">
+        <span class="version-text">V1.2.6</span>
+    </div>
+
+    <script src="{{ url_for('static', filename='theme-switcher.js') }}"></script>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+# 测试用例 YAML 格式文件
+# 生成时间: 2025/12/1 09:19:02
+# 测试用例数量: 3
+test_cases:
+  - test_case_id: "TC001"
+    test_case_name: "正常查询角色报表树"
+    api_name: "getRoleReportTree"
+    method: "POST"
+    url: "/user/sysRoleReportAssign/getRoleReportTree"
+    headers:
+      Content-Type: "application/json"
+      Authorization: "Bearer {token}"
+    request_data:
+      sysRoleReportAssignDTO: {"reportCode":"RK001","roleCode":"RO001"}
+    expected_status_code: 200
+    expected_response:
+      code: "1"
+      message: "查询成功"
+      total: "1"
+    test_type: "positive"
+    priority: "high"
+    description: "验证正常查询角色报表树功能"
+    preconditions: "已通过登录认证获取有效token"
+    postconditions: "返回包含有效数据结构的响应"
+    tags:
+      - "角色报表分发服务"
+      - "正常流程"
+
+  - test_case_id: "TC002"
+    test_case_name: "未认证访问接口"
+    api_name: "getRoleReportTree"
+    method: "POST"
+    url: "/user/sysRoleReportAssign/getRoleReportTree"
+    headers:
+      Content-Type: "application/json"
+    request_data:
+      sysRoleReportAssignDTO: {"reportCode":"RK001","roleCode":"RO001"}
+    expected_status_code: 401
+    expected_response:
+      code: "0"
+      message: "未认证请求"
+    test_type: "negative"
+    priority: "high"
+    description: "验证未认证访问接口返回401错误"
+    preconditions: "未进行任何认证操作"
+    postconditions: "系统拒绝未认证请求"
+    tags:
+      - "安全认证"
+      - "异常流程"
+
+  - test_case_id: "TC003"
+    test_case_name: "分页查询边界值"
+    api_name: "getRoleReportTree"
+    method: "POST"
+    url: "/user/sysRoleReportAssign/getRoleReportTree"
+    headers:
+      Content-Type: "application/json"
+      Authorization: "Bearer {token}"
+    request_data:
+      sysRoleReportAssignDTO: {"pageNum":"999","pageSize":"100"}
+    expected_status_code: 200
+    expected_response:
+      code: "1"
+      total: "1000"
+    test_type: "boundary"
+    priority: "medium"
+    description: "验证最大分页参数处理"
+    preconditions: "系统存在1000条有效数据"
+    postconditions: "正确返回最后一页数据"
+    tags:
+      - "边界值分析"
+      - "分页功能"

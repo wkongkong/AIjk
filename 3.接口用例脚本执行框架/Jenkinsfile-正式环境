@@ -1,0 +1,137 @@
+pipeline {
+    agent any
+    
+    parameters {
+        string(
+            name: 'COLLECTION_ID',
+            defaultValue: '*',
+            description: '集合ID（* 表示执行所有集合）'
+        )
+        booleanParam(
+            name: 'EXECUTE_ALL',
+            defaultValue: false,
+            description: '是否执行所有用例（忽略COLLECTION_ID）'
+        )
+    }
+    
+    environment {
+        // SVN配置
+        SVN_URL = 'svn://172.16.9.XXX/repo/jiaoben/jk/data_yaml'
+        SVN_CREDENTIALS_ID = 'svn-credentials'
+        
+        // 测试框架路径
+        TEST_FRAMEWORK_PATH = 'api_autotest'
+        
+        // Allure配置
+        ALLURE_RESULTS = 'allure-results'
+        ALLURE_REPORT = 'allure-report'
+    }
+    
+    stages {
+        stage('准备环境') {
+            steps {
+                echo '========================================='
+                echo '准备测试环境'
+                echo '========================================='
+                echo "集合ID: ${params.COLLECTION_ID}"
+                echo "执行所有: ${params.EXECUTE_ALL}"
+                echo "SVN地址: ${env.SVN_URL}"
+            }
+        }
+        
+        stage('更新测试用例') {
+            steps {
+                echo '========================================='
+                echo '从SVN更新测试用例'
+                echo '========================================='
+                
+                dir("${env.TEST_FRAMEWORK_PATH}/data_yaml") {
+                    // 检出SVN
+                    checkout([
+                        $class: 'SubversionSCM',
+                        locations: [[
+                            remote: "${env.SVN_URL}",
+                            credentialsId: "${env.SVN_CREDENTIALS_ID}",
+                            local: '.',
+                            depthOption: 'infinity',
+                            ignoreExternalsOption: true
+                        ]],
+                        quietOperation: false,
+                        workspaceUpdater: [$class: 'UpdateUpdater']
+                    ])
+                    
+                    // 列出文件
+                    sh '''
+                        echo "测试用例文件列表："
+                        ls -lh test_cases_*.yaml || echo "未找到测试用例文件"
+                    '''
+                }
+            }
+        }
+        
+        stage('执行测试') {
+            steps {
+                echo '========================================='
+                echo '执行测试用例'
+                echo '========================================='
+                
+                dir("${env.TEST_FRAMEWORK_PATH}") {
+                    sh '''
+                        # 设置环境变量
+                        export COLLECTION_ID="${COLLECTION_ID}"
+                        export EXECUTE_ALL="${EXECUTE_ALL}"
+                        export DATA_DIR="data_yaml"
+                        
+                        # 执行测试脚本
+                        python run_by_collection.py
+                    '''
+                }
+            }
+        }
+        
+        stage('生成报告') {
+            steps {
+                echo '========================================='
+                echo '生成Allure报告'
+                echo '========================================='
+                
+                dir("${env.TEST_FRAMEWORK_PATH}") {
+                    script {
+                        allure([
+                            includeProperties: false,
+                            jdk: '',
+                            properties: [],
+                            reportBuildPolicy: 'ALWAYS',
+                            results: [[path: "${env.ALLURE_RESULTS}"]]
+                        ])
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo '========================================='
+            echo '清理工作空间'
+            echo '========================================='
+            
+            // 保留Allure报告，清理其他临时文件
+            dir("${env.TEST_FRAMEWORK_PATH}") {
+                sh '''
+                    # 清理Python缓存
+                    find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+                    find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
+                '''
+            }
+        }
+        
+        success {
+            echo '✅ 测试执行成功！'
+        }
+        
+        failure {
+            echo '❌ 测试执行失败！'
+        }
+    }
+}
