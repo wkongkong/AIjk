@@ -1,0 +1,455 @@
+扩展支持多接口搭配场景
+方案设计
+架构扩展思路
+当前架构：单接口测试
+┌─────────────┐
+│  接口A用例   │ → 独立执行
+└─────────────┘
+┌─────────────┐
+│  接口B用例   │ → 独立执行
+└─────────────┘
+
+扩展架构：场景化测试
+┌─────────────────────────────────┐
+│      业务场景用例                │
+│  ┌─────┐  ┌─────┐  ┌─────┐    │
+│  │接口A│→ │接口B│→ │接口C│    │
+│  └─────┘  └─────┘  └─────┘    │
+│     ↓        ↓        ↓        │
+│   数据传递 + 状态管理           │
+└─────────────────────────────────┘
+实施方案
+1. 扩展用例数据结构
+创建新的场景用例格式：
+
+# scenario_cases/user_registration_flow.yaml
+
+scenario_info:
+  scenario_id: "SCENARIO_001"
+  scenario_name: "用户注册完整流程"
+  description: "测试用户从注册到登录再到查询个人信息的完整流程"
+  priority: "high"
+  tags:
+    - "用户管理"
+    - "端到端测试"
+  
+test_cases:
+  - test_case_id: "TC_FLOW_001"
+    test_case_name: "正常注册登录流程"
+    test_type: "scenario"  # 新增类型：scenario
+    
+    # 多步骤定义
+    test_steps:
+      # 步骤1：注册用户
+      - step_id: "STEP_001"
+        step_name: "注册新用户"
+        interface_id: "100001"  # 关联到具体接口
+        method: "POST"
+        url: "/user/register"
+        headers:
+          Content-Type: "application/json"
+        request_data:
+          username: "test_user_${timestamp}"
+          password: "Test@123"
+          email: "test@example.com"
+        expected_status_code: 200
+        expected_response:
+          code: "1"
+          message: "注册成功"
+        # 数据提取：从响应中提取数据供后续步骤使用
+        extract:
+          - name: "user_id"
+            jsonpath: "$.data.userId"
+            description: "用户ID"
+          - name: "username"
+            jsonpath: "$.data.username"
+            description: "用户名"
+        # 断言
+        assertions:
+          - check: "status_code"
+            expected: 200
+          - check: "jsonpath"
+            path: "$.code"
+            expected: "1"
+      
+      # 步骤2：登录
+      - step_id: "STEP_002"
+        step_name: "用户登录"
+        interface_id: "100002"
+        method: "POST"
+        url: "/user/login"
+        headers:
+          Content-Type: "application/json"
+        # 使用上一步提取的数据
+        request_data:
+          username: "${username}"  # 引用STEP_001提取的username
+          password: "Test@123"
+        expected_status_code: 200
+        extract:
+          - name: "token"
+            jsonpath: "$.data.token"
+          - name: "refresh_token"
+            jsonpath: "$.data.refreshToken"
+        assertions:
+          - check: "status_code"
+            expected: 200
+          - check: "jsonpath"
+            path: "$.data.token"
+            operator: "exists"
+      
+      # 步骤3：查询个人信息
+      - step_id: "STEP_003"
+        step_name: "查询个人信息"
+        interface_id: "100003"
+        method: "GET"
+        url: "/user/profile/${user_id}"  # 使用STEP_001提取的user_id
+        headers:
+          Content-Type: "application/json"
+          Authorization: "Bearer ${token}"  # 使用STEP_002提取的token
+        expected_status_code: 200
+        assertions:
+          - check: "jsonpath"
+            path: "$.data.username"
+            expected: "${username}"  # 验证用户名一致
+          - check: "jsonpath"
+            path: "$.data.userId"
+            expected: "${user_id}"  # 验证用户ID一致
+      
+      # 步骤4：修改个人信息
+      - step_id: "STEP_004"
+        step_name: "修改个人信息"
+        interface_id: "100004"
+        method: "PUT"
+        url: "/user/profile"
+        headers:
+          Content-Type: "application/json"
+          Authorization: "Bearer ${token}"
+        request_data:
+          userId: "${user_id}"
+          nickname: "测试昵称"
+          avatar: "http://example.com/avatar.jpg"
+        expected_status_code: 200
+        assertions:
+          - check: "jsonpath"
+            path: "$.code"
+            expected: "1"
+    
+    # 场景级别的前置条件
+    preconditions:
+      - "数据库中不存在该测试用户"
+      - "邮箱服务正常"
+    
+    # 场景级别的后置清理
+    postconditions:
+      - "清理测试用户数据"
+      - "清理相关日志"
+    
+    # 失败处理策略
+    on_failure:
+      stop_on_step_failure: true  # 某步骤失败则停止后续步骤
+      cleanup_on_failure: true    # 失败后执行清理
+2. 扩展执行框架
+创建场景测试执行器：
+
+# 3.接口用例脚本执行框架/api_autotest/core/scenario_executor.py
+
+class ScenarioExecutor:
+    """场景化测试执行器"""
+    
+    def __init__(self, api_client):
+        self.api_client = api_client
+        self.context = {}  # 存储步骤间共享的数据
+        
+    def execute_scenario(self, scenario_case):
+        """执行场景测试用例"""
+        scenario_id = scenario_case['test_case_id']
+        steps = scenario_case['test_steps']
+        
+        logger.info(f"开始执行场景: {scenario_case['test_case_name']}")
+        
+        results = {
+            'scenario_id': scenario_id,
+            'scenario_name': scenario_case['test_case_name'],
+            'steps': [],
+            'status': 'passed',
+            'context': {}
+        }
+        
+        try:
+            # 执行前置条件检查
+            self._check_preconditions(scenario_case.get('preconditions', []))
+            
+            # 逐步执行
+            for step in steps:
+                step_result = self._execute_step(step)
+                results['steps'].append(step_result)
+                
+                # 如果步骤失败且配置了停止策略
+                if not step_result['passed']:
+                    if scenario_case.get('on_failure', {}).get('stop_on_step_failure', True):
+                        results['status'] = 'failed'
+                        logger.error(f"步骤 {step['step_id']} 失败，停止后续步骤")
+                        break
+            
+            # 执行后置清理
+            self._execute_postconditions(scenario_case.get('postconditions', []))
+            
+        except Exception as e:
+            results['status'] = 'error'
+            results['error'] = str(e)
+            logger.error(f"场景执行异常: {e}")
+            
+            # 失败清理
+            if scenario_case.get('on_failure', {}).get('cleanup_on_failure', True):
+                self._cleanup_on_failure(scenario_case)
+        
+        return results
+    
+    def _execute_step(self, step):
+        """执行单个步骤"""
+        step_id = step['step_id']
+        logger.info(f"执行步骤: {step_id} - {step['step_name']}")
+        
+        # 替换请求数据中的变量
+        request_data = self._replace_variables(step.get('request_data', {}))
+        url = self._replace_variables(step['url'])
+        headers = self._replace_variables(step.get('headers', {}))
+        
+        # 发送请求
+        response = self.api_client.request(
+            method=step['method'],
+            url=url,
+            headers=headers,
+            json=request_data
+        )
+        
+        # 提取数据到上下文
+        if 'extract' in step:
+            for extract_rule in step['extract']:
+                value = self._extract_value(response.json(), extract_rule['jsonpath'])
+                self.context[extract_rule['name']] = value
+                logger.info(f"提取变量: {extract_rule['name']} = {value}")
+        
+        # 执行断言
+        assertions_passed = True
+        assertion_results = []
+        
+        for assertion in step.get('assertions', []):
+            result = self._run_assertion(assertion, response)
+            assertion_results.append(result)
+            if not result['passed']:
+                assertions_passed = False
+        
+        return {
+            'step_id': step_id,
+            'step_name': step['step_name'],
+            'passed': assertions_passed,
+            'status_code': response.status_code,
+            'response_time': response.elapsed.total_seconds(),
+            'assertions': assertion_results,
+            'extracted_data': {k: v for k, v in self.context.items()}
+        }
+    
+    def _replace_variables(self, data):
+        """替换数据中的变量引用"""
+        if isinstance(data, str):
+            # 替换 ${variable_name} 格式的变量
+            import re
+            pattern = r'\$\{(\w+)\}'
+            
+            def replace_match(match):
+                var_name = match.group(1)
+                if var_name in self.context:
+                    return str(self.context[var_name])
+                elif var_name == 'timestamp':
+                    import time
+                    return str(int(time.time()))
+                else:
+                    logger.warning(f"变量 {var_name} 未找到")
+                    return match.group(0)
+            
+            return re.sub(pattern, replace_match, data)
+        
+        elif isinstance(data, dict):
+            return {k: self._replace_variables(v) for k, v in data.items()}
+        
+        elif isinstance(data, list):
+            return [self._replace_variables(item) for item in data]
+        
+        else:
+            return data
+    
+    def _extract_value(self, response_data, jsonpath):
+        """使用JSONPath提取数据"""
+        from jsonpath_ng import parse
+        jsonpath_expr = parse(jsonpath)
+        matches = jsonpath_expr.find(response_data)
+        return matches[0].value if matches else None
+3. 扩展conftest.py支持场景测试
+# 3.接口用例脚本执行框架/api_autotest/testcases/conftest.py
+
+def pytest_generate_tests(metafunc):
+    """动态生成测试参数 - 支持单接口和场景测试"""
+    
+    # 场景测试
+    if "scenario_case" in metafunc.fixturenames:
+        scenario_dir = os.path.join(project_root, "scenario_cases")
+        scenario_cases = []
+        scenario_ids = []
+        
+        if os.path.exists(scenario_dir):
+            for file in os.listdir(scenario_dir):
+                if file.endswith('.yaml'):
+                    file_path = os.path.join(scenario_dir, file)
+                    cases = DataHandler.load_test_cases(file_path)
+                    
+                    # 只加载 test_type 为 scenario 的用例
+                    for case in cases:
+                        if case.get('test_type') == 'scenario':
+                            scenario_cases.append(case)
+                            scenario_ids.append(f"{file}::{case['test_case_id']}")
+        
+        if scenario_cases:
+            metafunc.parametrize("scenario_case", scenario_cases, ids=scenario_ids)
+    
+    # 原有的单接口测试逻辑保持不变
+    elif "test_case" in metafunc.fixturenames:
+        # ... 原有代码 ...
+4. 创建场景测试文件
+# 3.接口用例脚本执行框架/api_autotest/testcases/test_scenario.py
+
+import pytest
+import allure
+from core.scenario_executor import ScenarioExecutor
+from core.api_client import APIClient
+
+@allure.feature("场景化测试")
+class TestScenario:
+    """场景化测试类"""
+    
+    @pytest.fixture(scope="function")
+    def scenario_executor(self):
+        """场景执行器fixture"""
+        api_client = APIClient()
+        return ScenarioExecutor(api_client)
+    
+    @allure.story("业务流程测试")
+    def test_scenario(self, scenario_case, scenario_executor):
+        """执行场景测试用例"""
+        
+        # 添加Allure报告信息
+        allure.dynamic.title(scenario_case['test_case_name'])
+        allure.dynamic.description(scenario_case.get('description', ''))
+        
+        # 执行场景
+        result = scenario_executor.execute_scenario(scenario_case)
+        
+        # 为每个步骤添加Allure步骤
+        for step_result in result['steps']:
+            with allure.step(f"{step_result['step_id']}: {step_result['step_name']}"):
+                allure.attach(
+                    json.dumps(step_result, indent=2, ensure_ascii=False),
+                    name="步骤执行结果",
+                    attachment_type=allure.attachment_type.JSON
+                )
+                
+                # 断言步骤通过
+                assert step_result['passed'], f"步骤失败: {step_result['step_name']}"
+        
+        # 断言整个场景通过
+        assert result['status'] == 'passed', f"场景测试失败"
+5. AI生成场景用例
+扩展Dify提示词，支持生成场景用例：
+
+# 1.API文档解析服务平台/app/dify_client.py
+
+def generate_scenario_testcases(self, interfaces_list, scenario_description):
+    """
+    生成场景化测试用例
+    
+    Args:
+        interfaces_list: 多个接口的信息列表
+        scenario_description: 场景描述（用户输入或AI推断）
+    """
+    
+    prompt = f"""
+请根据以下接口列表，生成一个完整的业务场景测试用例。
+
+场景描述: {scenario_description}
+
+涉及的接口:
+{json.dumps(interfaces_list, ensure_ascii=False, indent=2)}
+
+要求:
+1. 生成YAML格式的场景测试用例
+2. 包含多个test_steps，每个步骤调用一个接口
+3. 步骤之间要有数据传递（使用extract和变量引用）
+4. 考虑真实的业务流程顺序
+5. 添加合理的断言验证
+
+输出格式参考:
+```yaml
+scenario_info:
+  scenario_id: "SCENARIO_XXX"
+  scenario_name: "场景名称"
+  
+test_cases:
+  - test_case_id: "TC_FLOW_XXX"
+    test_type: "scenario"
+    test_steps:
+      - step_id: "STEP_001"
+        interface_id: "xxx"
+        method: "POST"
+        url: "/xxx"
+        request_data: {{}}
+        extract:
+          - name: "variable_name"
+            jsonpath: "$.data.field"
+      - step_id: "STEP_002"
+        request_data:
+          field: "${{variable_name}}"  # 使用上一步的数据
+"""
+
+# 调用Dify生成
+# ...
+
+#### **6. 前端界面支持**
+
+在接口列表页添加"创建场景用例"功能：
+
+```html
+<!-- 场景用例创建界面 -->
+<div class="scenario-builder">
+    <h3>🎬 创建场景测试用例</h3>
+    
+    <div class="scenario-steps">
+        <div class="step-item" draggable="true">
+            <span class="step-number">1</span>
+            <select class="interface-selector">
+                <option>选择接口...</option>
+                <option value="100001">POST /user/register - 用户注册</option>
+                <option value="100002">POST /user/login - 用户登录</option>
+            </select>
+            <button class="btn-config">配置</button>
+            <button class="btn-remove">删除</button>
+        </div>
+    </div>
+    
+    <button class="btn-add-step">➕ 添加步骤</button>
+    <button class="btn-ai-generate">🤖 AI智能生成场景</button>
+    <button class="btn-save">💾 保存场景用例</button>
+</div>
+总结
+当前状态
+✅ 单接口测试：完全支持
+❌ 多接口场景：不支持
+扩展后能力
+✅ 单接口独立测试
+✅ 多接口编排场景测试
+✅ 步骤间数据传递
+✅ 业务流程端到端测试
+✅ AI智能生成场景用例
+实施优先级
+Phase 1: 扩展数据结构和执行框架（核心能力）
+Phase 2: 前端界面支持手动创建场景
+Phase 3: AI智能生成场景用例

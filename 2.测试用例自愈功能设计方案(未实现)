@@ -1,0 +1,561 @@
+测试用例自愈功能设计方案
+整体架构
+┌─────────────────────────────────────────────────────────────┐
+│                    测试用例自愈闭环                          │
+└─────────────────────────────────────────────────────────────┘
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        ▼                     ▼                     ▼
+   ┌─────────┐         ┌──────────┐         ┌──────────┐
+   │ 执行用例 │────────▶│ 分析报告 │────────▶│ 自动修复 │
+   └─────────┘         └──────────┘         └──────────┘
+        │                     │                     │
+        │                     │                     │
+        ▼                     ▼                     ▼
+   Allure报告          AI分析引擎           更新用例到SVN
+        │                     │                     │
+        └─────────────────────┴─────────────────────┘
+                              │
+                              ▼
+                        验证修复效果
+核心设计思路
+1. 执行阶段 - 收集详细信息
+在现有的执行框架基础上，增强日志收集：
+
+# 3.接口用例脚本执行框架/api_autotest/core/test_executor.py
+
+class EnhancedTestExecutor:
+    """增强的测试执行器，收集自愈所需信息"""
+    
+    def execute_testcase(self, testcase):
+        """执行测试用例并收集详细信息"""
+        result = {
+            'testcase_id': testcase['id'],
+            'interface_id': testcase['interface_id'],
+            'collection_id': testcase['collection_id'],
+            'status': None,  # passed/failed/error
+            'execution_time': None,
+            'request': {
+                'method': None,
+                'url': None,
+                'headers': None,
+                'params': None,
+                'body': None
+            },
+            'response': {
+                'status_code': None,
+                'headers': None,
+                'body': None,
+                'time': None
+            },
+            'assertions': [],  # 每个断言的结果
+            'error': {
+                'type': None,  # connection/timeout/assertion/validation
+                'message': None,
+                'traceback': None
+            },
+            'context': {
+                'api_doc': None,  # 原始API文档
+                'testcase_yaml': None  # 测试用例YAML
+            }
+        }
+        
+        try:
+            # 执行请求
+            response = self.send_request(testcase)
+            result['response'] = self.extract_response_info(response)
+            
+            # 执行断言
+            for assertion in testcase['assertions']:
+                assertion_result = self.run_assertion(assertion, response)
+                result['assertions'].append(assertion_result)
+                
+            result['status'] = 'passed' if all(a['passed'] for a in result['assertions']) else 'failed'
+            
+        except Exception as e:
+            result['status'] = 'error'
+            result['error'] = self.extract_error_info(e)
+            
+        # 保存到自愈数据库
+        self.save_for_healing(result)
+        
+        return result
+2. 分析阶段 - AI智能诊断
+创建一个专门的AI分析服务，解析失败原因：
+
+# 1.API文档解析服务平台/app/healing_analyzer.py
+
+class HealingAnalyzer:
+    """测试用例自愈分析器"""
+    
+    def __init__(self, dify_client):
+        self.dify_client = dify_client
+        
+    def analyze_failure(self, test_result):
+        """分析测试失败原因并生成修复建议"""
+        
+        # 构建分析提示词
+        analysis_prompt = self._build_analysis_prompt(test_result)
+        
+        # 调用Dify AI分析
+        analysis = self.dify_client.analyze_test_failure(analysis_prompt)
+        
+        return {
+            'failure_category': analysis['category'],  # 断言错误/数据问题/环境问题/接口变更
+            'root_cause': analysis['root_cause'],
+            'fix_suggestions': analysis['suggestions'],
+            'confidence': analysis['confidence'],  # 0-1，修复建议的置信度
+            'auto_fixable': analysis['auto_fixable']  # 是否可自动修复
+        }
+    
+    def _build_analysis_prompt(self, test_result):
+        """构建AI分析提示词"""
+        return f"""
+# 测试用例失败分析
+
+## 接口信息
+- 接口路径: {test_result['request']['url']}
+- 请求方法: {test_result['request']['method']}
+- 接口文档: {test_result['context']['api_doc']}
+
+## 测试用例
+```yaml
+{test_result['context']['testcase_yaml']}
+执行结果
+状态码: {test_result['response']['status_code']}
+响应时间: {test_result['response']['time']}ms
+响应体: {test_result['response']['body']}
+失败断言
+{self._format_failed_assertions(test_result['assertions'])}
+
+错误信息
+类型: {test_result['error']['type']}
+消息: {test_result['error']['message']}
+请分析失败原因，并给出修复建议。重点关注：
+
+是否是断言条件设置不合理？
+是否是测试数据问题？
+是否是接口返回格式变化？
+是否是环境配置问题？
+输出JSON格式： {{ "category": "断言错误|数据问题|环境问题|接口变更", "root_cause": "详细原因分析", "suggestions": ["修复建议1", "修复建议2"], "confidence": 0.85, "auto_fixable": true, "fix_actions": [ {{ "type": "update_assertion", "target": "status_code", "old_value": 200, "new_value": 201, "reason": "接口返回201而非200" }} ] }} """
+
+
+#### 3. **修复阶段 - 自动修复策略**
+
+根据分析结果，自动修复测试用例：
+
+```python
+# 1.API文档解析服务平台/app/healing_fixer.py
+
+class HealingFixer:
+    """测试用例自动修复器"""
+    
+    FIXABLE_CATEGORIES = {
+        'assertion_error': ['update_assertion', 'add_assertion', 'remove_assertion'],
+        'data_format': ['update_extract', 'update_validation'],
+        'status_code': ['update_expected_status'],
+        'response_schema': ['update_schema_validation'],
+        'timeout': ['increase_timeout', 'add_retry']
+    }
+    
+    def auto_fix(self, test_result, analysis):
+        """自动修复测试用例"""
+        
+        if not analysis['auto_fixable'] or analysis['confidence'] < 0.7:
+            return {
+                'fixed': False,
+                'reason': '置信度不足或无法自动修复',
+                'manual_review_required': True
+            }
+        
+        # 加载原始测试用例
+        testcase = self.load_testcase(
+            test_result['collection_id'],
+            test_result['interface_id']
+        )
+        
+        # 应用修复动作
+        fixed_testcase = testcase.copy()
+        fix_log = []
+        
+        for action in analysis['fix_actions']:
+            if action['type'] == 'update_assertion':
+                self._fix_assertion(fixed_testcase, action)
+                fix_log.append(f"更新断言: {action['target']} {action['old_value']} → {action['new_value']}")
+                
+            elif action['type'] == 'update_expected_status':
+                self._fix_status_code(fixed_testcase, action)
+                fix_log.append(f"更新期望状态码: {action['old_value']} → {action['new_value']}")
+                
+            elif action['type'] == 'update_extract':
+                self._fix_extract(fixed_testcase, action)
+                fix_log.append(f"更新数据提取: {action['field']}")
+                
+            elif action['type'] == 'add_retry':
+                self._add_retry_config(fixed_testcase, action)
+                fix_log.append(f"添加重试配置: {action['retry_times']}次")
+        
+        # 验证修复后的用例
+        validation = self._validate_fixed_testcase(fixed_testcase)
+        
+        if validation['valid']:
+            # 保存修复后的用例
+            self.save_testcase(fixed_testcase)
+            
+            # 提交到SVN
+            self.commit_to_svn(fixed_testcase, fix_log)
+            
+            return {
+                'fixed': True,
+                'fix_log': fix_log,
+                'testcase': fixed_testcase,
+                'validation': validation
+            }
+        else:
+            return {
+                'fixed': False,
+                'reason': validation['error'],
+                'manual_review_required': True
+            }
+    
+    def _fix_assertion(self, testcase, action):
+        """修复断言"""
+        for assertion in testcase['test']['validate']:
+            if assertion['check'] == action['target']:
+                assertion['expected'] = action['new_value']
+                assertion['_fix_reason'] = action['reason']
+                assertion['_fixed_at'] = datetime.now().isoformat()
+                break
+    
+    def _fix_status_code(self, testcase, action):
+        """修复状态码期望"""
+        for assertion in testcase['test']['validate']:
+            if assertion['check'] == 'status_code':
+                assertion['expected'] = action['new_value']
+                break
+4. 验证阶段 - 自动重跑验证
+修复后自动重新执行，验证修复效果：
+
+# 1.API文档解析服务平台/app/healing_validator.py
+
+class HealingValidator:
+    """自愈验证器"""
+    
+    def validate_fix(self, fixed_testcase, original_result):
+        """验证修复效果"""
+        
+        # 重新执行修复后的用例
+        new_result = self.executor.execute_testcase(fixed_testcase)
+        
+        validation = {
+            'success': new_result['status'] == 'passed',
+            'original_status': original_result['status'],
+            'new_status': new_result['status'],
+            'execution_time': new_result['execution_time'],
+            'comparison': self._compare_results(original_result, new_result)
+        }
+        
+        if validation['success']:
+            # 修复成功，更新用例状态
+            self._mark_as_healed(fixed_testcase, validation)
+        else:
+            # 修复失败，标记需要人工介入
+            self._mark_for_manual_review(fixed_testcase, validation)
+        
+        return validation
+    
+    def _compare_results(self, original, new):
+        """对比修复前后的执行结果"""
+        return {
+            'status_changed': original['status'] != new['status'],
+            'response_time_diff': new['response']['time'] - original['response']['time'],
+            'assertions_fixed': [
+                a for a in new['assertions'] 
+                if a['passed'] and not self._was_passed_before(a, original)
+            ]
+        }
+5. 前端界面设计
+在现有界面基础上，添加自愈功能入口：
+
+<!-- 1.API文档解析服务平台/app/templates/healing_dashboard.html -->
+
+<div class="healing-dashboard">
+    <h2>🔧 测试用例自愈中心</h2>
+    
+    <!-- 自愈统计 -->
+    <div class="healing-stats">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_failures }}</div>
+            <div class="stat-label">失败用例</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ auto_fixed }}</div>
+            <div class="stat-label">自动修复</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ success_rate }}%</div>
+            <div class="stat-label">修复成功率</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ pending_review }}</div>
+            <div class="stat-label">待人工审核</div>
+        </div>
+    </div>
+    
+    <!-- 失败用例列表 -->
+    <div class="failed-testcases">
+        <table>
+            <thead>
+                <tr>
+                    <th>接口</th>
+                    <th>用例名称</th>
+                    <th>失败原因</th>
+                    <th>AI分析</th>
+                    <th>修复建议</th>
+                    <th>置信度</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for failure in failures %}
+                <tr>
+                    <td>{{ failure.interface_path }}</td>
+                    <td>{{ failure.testcase_name }}</td>
+                    <td>{{ failure.error_type }}</td>
+                    <td>
+                        <button onclick="viewAnalysis('{{ failure.id }}')">
+                            查看分析
+                        </button>
+                    </td>
+                    <td>{{ failure.fix_suggestions | length }} 条建议</td>
+                    <td>
+                        <span class="confidence-badge confidence-{{ failure.confidence | confidence_level }}">
+                            {{ (failure.confidence * 100) | round }}%
+                        </span>
+                    </td>
+                    <td>
+                        {% if failure.auto_fixable %}
+                        <button class="btn-primary" onclick="autoFix('{{ failure.id }}')">
+                            🤖 自动修复
+                        </button>
+                        {% else %}
+                        <button class="btn-warning" onclick="manualFix('{{ failure.id }}')">
+                            ✏️ 人工修复
+                        </button>
+                        {% endif %}
+                        <button onclick="ignoreFailure('{{ failure.id }}')">
+                            忽略
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- 修复历史 -->
+    <div class="healing-history">
+        <h3>修复历史</h3>
+        <div class="timeline">
+            {% for record in healing_history %}
+            <div class="timeline-item">
+                <div class="timeline-time">{{ record.fixed_at }}</div>
+                <div class="timeline-content">
+                    <strong>{{ record.testcase_name }}</strong>
+                    <p>{{ record.fix_description }}</p>
+                    <span class="badge badge-{{ record.status }}">
+                        {{ record.status }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+6. 数据库设计
+存储自愈相关数据：
+
+-- 失败记录表
+CREATE TABLE test_failures (
+    id VARCHAR(50) PRIMARY KEY,
+    collection_id VARCHAR(50),
+    interface_id VARCHAR(50),
+    testcase_id VARCHAR(50),
+    execution_id VARCHAR(50),
+    failure_time TIMESTAMP,
+    error_type VARCHAR(50),
+    error_message TEXT,
+    request_data JSON,
+    response_data JSON,
+    context_data JSON,
+    status VARCHAR(20) -- pending/analyzing/fixed/ignored
+);
+
+-- AI分析结果表
+CREATE TABLE healing_analysis (
+    id VARCHAR(50) PRIMARY KEY,
+    failure_id VARCHAR(50),
+    category VARCHAR(50),
+    root_cause TEXT,
+    suggestions JSON,
+    fix_actions JSON,
+    confidence FLOAT,
+    auto_fixable BOOLEAN,
+    analyzed_at TIMESTAMP
+);
+
+-- 修复记录表
+CREATE TABLE healing_records (
+    id VARCHAR(50) PRIMARY KEY,
+    failure_id VARCHAR(50),
+    analysis_id VARCHAR(50),
+    fix_type VARCHAR(20), -- auto/manual
+    fix_actions JSON,
+    fix_log TEXT,
+    old_testcase JSON,
+    new_testcase JSON,
+    validation_result JSON,
+    fixed_at TIMESTAMP,
+    fixed_by VARCHAR(50),
+    status VARCHAR(20) -- success/failed/pending_validation
+);
+7. 工作流程
+1. Jenkins执行测试 → 生成Allure报告
+                ↓
+2. 解析报告，提取失败用例信息
+                ↓
+3. 调用AI分析失败原因
+                ↓
+4. 生成修复建议（置信度评分）
+                ↓
+5. 判断是否可自动修复
+                ↓
+        ┌───────┴───────┐
+        ▼               ▼
+   可自动修复      需人工审核
+        │               │
+        ▼               ▼
+   自动应用修复    展示在界面
+        │               │
+        ▼               │
+   重新执行验证         │
+        │               │
+        ▼               │
+   修复成功？           │
+    ┌──┴──┐            │
+    ▼     ▼            ▼
+   是    否      人工修复后提交
+    │     │            │
+    └──┬──┴────────────┘
+       ▼
+  提交到SVN，更新用例
+       ▼
+  触发回归测试验证
+8. 配置文件
+# healing_config.yaml
+
+healing:
+  enabled: true
+  
+  # 自动修复配置
+  auto_fix:
+    enabled: true
+    confidence_threshold: 0.7  # 置信度阈值
+    max_retry: 3  # 最大重试次数
+    
+  # 可自动修复的错误类型
+  fixable_errors:
+    - assertion_error
+    - status_code_mismatch
+    - response_format_change
+    - timeout
+    
+  # 需要人工审核的错误类型
+  manual_review_required:
+    - api_contract_change
+    - business_logic_error
+    - security_issue
+    
+  # AI分析配置
+  ai_analysis:
+    provider: dify
+    model: gpt-4
+    max_tokens: 2000
+    temperature: 0.3
+    
+  # 验证配置
+  validation:
+    auto_rerun: true
+    rerun_delay: 5  # 秒
+    max_rerun: 2
+    
+  # 通知配置
+  notification:
+    enabled: true
+    channels:
+      - email
+      - webhook
+    recipients:
+      - team@example.com
+9. API接口设计
+# 1.API文档解析服务平台/app/routes.py
+
+@api_bp.route('/healing/analyze/<failure_id>', methods=['POST'])
+def analyze_failure(failure_id):
+    """分析测试失败原因"""
+    analyzer = HealingAnalyzer(current_app.config['DIFY_CLIENT'])
+    failure = storage.get_failure(failure_id)
+    analysis = analyzer.analyze_failure(failure)
+    storage.save_analysis(failure_id, analysis)
+    return jsonify({'success': True, 'analysis': analysis})
+
+@api_bp.route('/healing/fix/<failure_id>', methods=['POST'])
+def auto_fix_testcase(failure_id):
+    """自动修复测试用例"""
+    fixer = HealingFixer()
+    failure = storage.get_failure(failure_id)
+    analysis = storage.get_analysis(failure_id)
+    result = fixer.auto_fix(failure, analysis)
+    
+    if result['fixed']:
+        # 触发验证
+        validator = HealingValidator()
+        validation = validator.validate_fix(result['testcase'], failure)
+        return jsonify({'success': True, 'result': result, 'validation': validation})
+    else:
+        return jsonify({'success': False, 'reason': result['reason']})
+
+@api_bp.route('/healing/dashboard', methods=['GET'])
+def healing_dashboard():
+    """自愈仪表板数据"""
+    stats = {
+        'total_failures': storage.count_failures(),
+        'auto_fixed': storage.count_fixed(fix_type='auto'),
+        'manual_fixed': storage.count_fixed(fix_type='manual'),
+        'pending_review': storage.count_pending(),
+        'success_rate': storage.calculate_success_rate()
+    }
+    return jsonify({'success': True, 'stats': stats})
+10. 关键优势
+智能分析：利用AI深度分析失败原因，不只是简单的错误匹配
+置信度评分：对修复建议进行置信度评估，低置信度的转人工审核
+闭环验证：修复后自动重跑验证，确保修复有效
+版本控制：所有修复都提交到SVN，可追溯、可回滚
+渐进式自愈：从简单错误开始，逐步扩展到复杂场景
+人机协作：自动修复 + 人工审核，确保质量
+实施建议
+第一阶段（MVP）：
+
+实现失败用例收集和展示
+接入AI分析（简单的断言错误、状态码错误）
+支持人工修复并记录
+第二阶段：
+
+实现自动修复（高置信度场景）
+添加修复验证机制
+完善自愈仪表板
+第三阶段：
+
+扩展可修复的错误类型
+优化AI分析模型
+添加修复效果统计和学习
